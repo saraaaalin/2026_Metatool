@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Portable Attention Box — Attention Database</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -16,6 +22,7 @@
         <a href="#new" data-nav="new">New Entry</a>
         <a href="#archive" data-nav="archive">Archive</a>
         <a href="#recall" data-nav="recall">Recall Mode</a>
+        <button type="button" id="btn-install" class="btn btn--small hidden">Install</button>
       </nav>
     </div>
   </header>
@@ -65,7 +72,17 @@
         <form id="entry-form" class="entry-form">
           <div class="form-grid">
             <label class="field">
-              <span class="field-label">Desk photo</span>
+              <span class="field-label">Capture desk photo</span>
+              <div class="camera-actions">
+                <button type="button" id="btn-start-camera" class="btn">Start Camera</button>
+                <button type="button" id="btn-capture-photo" class="btn" disabled>Capture</button>
+                <button type="button" id="btn-stop-camera" class="btn" disabled>Stop</button>
+              </div>
+              <video id="camera-video" class="camera-video hidden" playsinline autoplay muted></video>
+              <p id="camera-status" class="camera-status">Camera is off. You can also upload a photo file below.</p>
+            </label>
+            <label class="field">
+              <span class="field-label">Or upload photo file</span>
               <input type="file" id="photo-input" accept="image/*" />
             </label>
             <label class="field">
