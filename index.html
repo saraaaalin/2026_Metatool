@@ -1,13 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spatial Comfort Lab</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portable Attention Box — Attention Database</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Site chrome: title + primary navigation -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="#home" class="site-title" data-nav="home">Portable Attention Box</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="#home" data-nav="home">Home</a>
+        <a href="#new" data-nav="new">New Entry</a>
+        <a href="#archive" data-nav="archive">Archive</a>
+        <a href="#recall" data-nav="recall">Recall Mode</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Section 1: Project introduction + system diagram -->
+    <section id="page-home" class="page page--active" aria-labelledby="home-heading">
+      <div class="page-inner">
+        <h1 id="home-heading" class="page-title">Portable Attention Box</h1>
+        <p class="lead">
+          This project investigates how <strong>desk arrangements</strong>, <strong>lighting conditions</strong>,
+          and <strong>emotional states</strong> relate to measurable attention and focus. Each session is
+          documented as a spatial record—linking what is on the desk to how it felt to work there.
+        </p>
+
+        <div class="diagram-block halftone-zone">
+          <h2 class="section-label">System flow</h2>
+          <div class="system-diagram" role="img" aria-label="Real desk to database flow">
+            <div class="diagram-row">
+              <div class="diagram-node">Real Desk</div>
+              <span class="diagram-arrow" aria-hidden="true">→</span>
+              <div class="diagram-node">Photo Input</div>
+              <span class="diagram-arrow" aria-hidden="true">→</span>
+              <div class="diagram-node diagram-node--wide">Object Arrangement Map / Point Cloud</div>
+            </div>
+            <div class="diagram-row">
+              <div class="diagram-node">Attention Log</div>
+              <span class="diagram-arrow" aria-hidden="true">→</span>
+              <div class="diagram-node diagram-node--wide">Searchable Attention Database</div>
+            </div>
+          </div>
+        </div>
+
+        <p class="meta-note">
+          Use <em>New Entry</em> to log a desk state. Records are stored locally in your browser.
+          <em>Recall Mode</em> retrieves past configurations closest to a target attention level.
+        </p>
+      </div>
+    </section>
+
+    <!-- Section 2: Form + spatial record preview (prototype) -->
+    <section id="page-new" class="page" aria-labelledby="new-heading">
+      <div class="page-inner">
+        <h1 id="new-heading" class="page-title">New Entry</h1>
+        <p class="section-intro">Document a desk session. Generate a placeholder spatial record, then save to the archive.</p>
+
+        <form id="entry-form" class="entry-form">
+          <div class="form-grid">
+            <label class="field">
+              <span class="field-label">Desk photo</span>
+              <input type="file" id="photo-input" accept="image/*" />
+            </label>
+            <label class="field">
+              <span class="field-label">Date</span>
+              <input type="date" id="entry-date" required />
+            </label>
+            <label class="field">
+              <span class="field-label">Attention / focus (0–100%)</span>
+              <input type="number" id="entry-focus" min="0" max="100" step="1" value="50" required />
+            </label>
+            <label class="field">
+              <span class="field-label">Mood / feeling</span>
+              <input type="text" id="entry-mood" placeholder="e.g. calm, restless" />
+            </label>
+            <label class="field">
+              <span class="field-label">Lighting condition</span>
+              <input type="text" id="entry-lighting" placeholder="e.g. window, lamp only" />
+            </label>
+            <label class="field field--full">
+              <span class="field-label">Notes (desk arrangement)</span>
+              <textarea id="entry-notes" rows="3" placeholder="Objects, layout, clutter…"></textarea>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="button" id="btn-generate" class="btn btn--primary">Generate Spatial Record</button>
+            <button type="button" id="btn-save" class="btn" disabled>Save to Archive</button>
+          </div>
+        </form>
+
+        <div id="record-preview" class="record-preview hidden">
+          <h2 class="section-label">Spatial record (prototype)</h2>
+          <div class="preview-split">
+            <figure class="preview-card">
+              <figcaption>Photo input</figcaption>
+              <div class="preview-frame">
+                <img id="preview-photo" alt="Desk photo preview" />
+              </div>
+            </figure>
+            <figure class="preview-card preview-card--dark">
+              <figcaption>Simulated arrangement / point cloud</figcaption>
+              <div class="preview-frame preview-frame--canvas">
+                <canvas id="cloud-canvas-main" width="400" height="280" aria-label="Point cloud visualization"></canvas>
+              </div>
+            </figure>
+          </div>
+          <p class="hint">The point cloud is a front-end placeholder (density clusters, no CV). Each save stores a seed so the preview stays consistent in the archive.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Saved records grid -->
+    <section id="page-archive" class="page" aria-labelledby="archive-heading">
+      <div class="page-inner">
+        <h1 id="archive-heading" class="page-title">Archive</h1>
+        <p class="section-intro">Local attention records. Data persists in this browser only.</p>
+        <div id="archive-empty" class="empty-state hidden">No records yet. Create an entry and save it.</div>
+        <div id="archive-grid" class="archive-grid"></div>
+      </div>
+    </section>
+
+    <!-- Section 4: Search by desired attention level -->
+    <section id="page-recall" class="page" aria-labelledby="recall-heading">
+      <div class="page-inner">
+        <h1 id="recall-heading" class="page-title">Recall Mode</h1>
+        <p class="section-intro">Find past desk configurations near a target focus level.</p>
+
+        <div class="recall-controls card">
+          <label class="field field--inline">
+            <span class="field-label">Desired attention level (%)</span>
+            <input type="number" id="recall-target" min="0" max="100" step="1" value="60" />
+          </label>
+          <button type="button" id="btn-recall" class="btn btn--primary">Search archive</button>
+        </div>
+
+        <h2 class="recall-results-title" id="recall-results-heading">Configurations closest to your desired attention state.</h2>
+        <div id="recall-empty" class="empty-state">Enter a percentage and search to see matches.</div>
+        <div id="recall-grid" class="archive-grid recall-grid hidden"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Portable Attention Box — personal attention database (local prototype)</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
 </html>
