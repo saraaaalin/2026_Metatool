@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portable Attention Box — UI Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #111; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── DESIGN TOKENS ── */
+  :root {
+    --ink: #0c0c0c;
+    --paper: #f8f7f5;
+    --paper2: #efefed;
+    --gray1: #d8d6d2;
+    --gray2: #a8a6a1;
+    --gray3: #6b6966;
+    --accent: #0c0c0c;
+    --grid: rgba(12,12,12,0.07);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  /* ── SHARED PHONE SHELL ── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+    font-family: var(--mono);
+    color: var(--ink);
+  }
+
+  /* Grid background */
+  .phone::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .screen-content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px 6px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--gray3);
+    font-family: var(--mono);
+  }
+  .status-bar .time { font-weight: 500; font-size: 12px; color: var(--ink); }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+  .signal-bar { display: flex; gap: 2px; align-items: flex-end; }
+  .signal-bar span { background: var(--ink); width: 3px; border-radius: 1px; }
+
+  /* Nav bar */
+  .nav-bar {
+    display: flex; align-items: center;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--gray1);
+    gap: 12px;
+  }
+  .nav-bar .back-btn {
+    font-size: 10px; letter-spacing: 0.1em;
+    color: var(--gray3); text-transform: uppercase;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .nav-bar .screen-title {
+    font-size: 10px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--gray3);
+    margin-left: auto; margin-right: auto;
+  }
+
+  /* ── HALFTONE GENERATOR ── */
+  .halftone-bg {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none; cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-ghost {
+    width: 100%;
+    padding: 14px 20px;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--gray1); cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* ── LABELS ── */
+  .field-label {
+    font-size: 9px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--gray3);
+    margin-bottom: 6px;
+  }
+  .field-value {
+    font-size: 12px; color: var(--ink);
+    font-family: var(--mono);
+  }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--gray1); margin: 0 20px; }
+
+  /* ── SECTION BLOCK ── */
+  .section { padding: 18px 20px; }
+
+  /* ── SLIDER ── */
+  .focus-slider-track {
+    height: 2px; background: var(--gray1);
+    position: relative; margin: 10px 0;
+  }
+  .focus-slider-fill {
+    height: 2px; background: var(--ink);
+    position: absolute; left: 0; top: 0;
+  }
+  .focus-slider-thumb {
+    width: 12px; height: 12px;
+    background: var(--ink);
+    border-radius: 50%;
+    position: absolute; top: -5px;
+    transform: translateX(-50%);
+  }
+  .slider-labels {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: var(--gray3); letter-spacing: 0.08em;
+    margin-top: 4px;
+  }
+
+  /* ── LIGHTING CHIPS ── */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 5px 10px;
+    border: 1px solid var(--gray1);
+    font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gray3); cursor: pointer; background: transparent;
+    font-family: var(--mono);
+  }
+  .chip.active {
+    border-color: var(--ink); color: var(--ink);
+    background: rgba(12,12,12,0.05);
+  }
+
+  /* ── TEXT INPUT ── */
+  .text-input {
+    width: 100%;
+    border: none; border-bottom: 1px solid var(--gray1);
+    background: transparent;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--ink);
+    padding: 6px 0;
+    outline: none;
+  }
+  .text-input::placeholder { color: var(--gray2); font-size: 11px; }
+
+  /* ── NOTES AREA ── */
+  .notes-area {
+    width: 100%;
+    border: 1px solid var(--gray1);
+    background: transparent;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--ink);
+    padding: 10px;
+    outline: none; resize: none;
+    min-height: 64px;
+  }
+  .notes-area::placeholder { color: var(--gray2); }
+
+  /* ── ARCHIVE CARDS ── */
+  .archive-card {
+    border: 1px solid var(--gray1);
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 56px 56px 1fr;
+    gap: 10px;
+    align-items: start;
+    background: var(--paper);
+    margin: 0 20px;
+  }
+  .thumb-box {
+    width: 56px; height: 56px;
+    background: var(--paper2);
+    border: 1px solid var(--gray1);
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .archive-meta { font-size: 9px; color: var(--gray3); line-height: 1.8; letter-spacing: 0.06em; }
+  .archive-meta .date { font-size: 10px; color: var(--ink); font-weight: 500; margin-bottom: 2px; }
+  .focus-pill {
+    display: inline-block;
+    padding: 2px 6px;
+    border: 1px solid var(--ink);
+    font-size: 8px; letter-spacing: 0.1em;
+    color: var(--ink);
+  }
+
+  /* ── RECALL RESULT CARDS ── */
+  .recall-card {
+    border: 1px solid var(--gray1);
+    margin: 0 20px;
+    padding: 14px;
+    background: var(--paper);
+  }
+  .recall-match-bar {
+    height: 2px; background: var(--gray1);
+    position: relative; margin: 8px 0 4px;
+  }
+  .recall-match-fill { height: 2px; background: var(--ink); position: absolute; left: 0; top: 0; }
+
+  /* ── DETAIL SCREEN ── */
+  .detail-stat {
+    display: flex; flex-direction: column; gap: 2px;
+    border-left: 2px solid var(--ink);
+    padding-left: 10px;
+  }
+  .detail-stat .s-label { font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray3); }
+  .detail-stat .s-value { font-size: 13px; color: var(--ink); }
+
+  /* ── PROCESSING SCREEN ── */
+  .processing-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; font-size: 10px; letter-spacing: 0.06em;
+  }
+  .processing-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ink); flex-shrink: 0;
+  }
+  .processing-dot.done { background: var(--ink); }
+  .processing-dot.active { background: var(--gray2); animation: pulse 1.2s infinite; }
+  .processing-dot.waiting { background: var(--gray1); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+</head>
+<body>
+<script type="text/babel">
+
+/* ── UTILITY COMPONENTS ── */
+
+const StatusBar = () => (
+  <div className="status-bar">
+    <span className="time">9:41</span>
+    <div className="icons">
+      <div className="signal-bar">
+        <span style={{height:'4px'}}></span>
+        <span style={{height:'6px'}}></span>
+        <span style={{height:'9px'}}></span>
+        <span style={{height:'12px'}}></span>
+      </div>
+      <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
+        <rect x="0.5" y="0.5" width="13" height="9" rx="2" stroke="#6b6966" strokeWidth="1"/>
+        <rect x="1.5" y="1.5" width="10" height="7" rx="1" fill="#0c0c0c"/>
+        <rect x="14" y="3" width="2" height="4" rx="1" fill="#6b6966"/>
+      </svg>
+    </div>
+  </div>
+);
+
+const NavBar = ({ title, back }) => (
+  <div className="nav-bar">
+    {back && <span className="back-btn">← {back}</span>}
+    <span className="screen-title">{title}</span>
+    {back && <span style={{width: 60}}></span>}
+  </div>
+);
+
+/* Point cloud SVG */
+const PointCloud = ({ width, height, density = 120, style = {} }) => {
+  const pts = React.useMemo(() => {
+    const r = [];
+    // cluster points with some Gaussian-ish distribution
+    const cx = width * 0.5, cy = height * 0.45;
+    for (let i = 0; i < density; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spread = Math.random();
+      const radius = Math.pow(spread, 0.5) * Math.min(width, height) * 0.44;
+      const x = cx + Math.cos(angle) * radius * (0.5 + Math.random() * 0.5);
+      const y = cy + Math.sin(angle) * radius * 0.65;
+      const s = 0.8 + Math.random() * 2.2;
+      const o = 0.15 + Math.random() * 0.75;
+      r.push({ x, y, s, o });
+    }
+    // add some object cluster groups
+    [[0.28,0.38],[0.55,0.32],[0.72,0.5],[0.38,0.62],[0.6,0.65]].forEach(([fx,fy]) => {
+      for (let j = 0; j < 12; j++) {
+        r.push({
+          x: fx * width + (Math.random()-0.5)*28,
+          y: fy * height + (Math.random()-0.5)*20,
+          s: 1 + Math.random() * 2.5,
+          o: 0.4 + Math.random() * 0.55
+        });
+      }
+    });
+    return r;
+  }, [width, height, density]);
+
+  return (
+    <svg width={width} height={height} style={style}>
+      {/* Grid mesh */}
+      {Array.from({length: Math.floor(height/20)+1}, (_,i) => (
+        <line key={`h${i}`} x1={0} y1={i*20} x2={width} y2={i*20}
+          stroke="rgba(12,12,12,0.06)" strokeWidth="0.5"/>
+      ))}
+      {Array.from({length: Math.floor(width/20)+1}, (_,i) => (
+        <line key={`v${i}`} x1={i*20} y1={0} x2={i*20} y2={height}
+          stroke="rgba(12,12,12,0.06)" strokeWidth="0.5"/>
+      ))}
+      {/* Connecting lines between nearby points */}
+      {pts.slice(0,40).map((p,i) => pts.slice(i+1,i+3).map((q,j) => {
+        const dist = Math.hypot(q.x-p.x, q.y-p.y);
+        return dist < 55 ? (
+          <line key={`l${i}-${j}`} x1={p.x} y1={p.y} x2={q.x} y2={q.y}
+            stroke="rgba(12,12,12,0.1)" strokeWidth="0.5"/>
+        ) : null;
+      }))}
+      {/* Points */}
+      {pts.map((p,i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={p.s}
+          fill={`rgba(12,12,12,${p.o})`}/>
+      ))}
+    </svg>
+  );
+};
+
+/* Halftone dot pattern */
+const Halftone = ({ width, height }) => {
+  const rows = Math.floor(height / 10);
+  const cols = Math.floor(width / 10);
+  return (
+    <svg width={width} height={height} className="halftone-bg">
+      {Array.from({length: rows}, (_,r) =>
+        Array.from({length: cols}, (_,c) => {
+          const x = c * 10 + 5;
+          const y = r * 10 + 5;
+          const cx2 = width / 2, cy2 = height / 2;
+          const d = Math.hypot(x - cx2, y - cy2);
+          const maxD = Math.hypot(cx2, cy2);
+          const sz = 0.4 + (d / maxD) * 1.0;
+          return <circle key={`${r}-${c}`} cx={x} cy={y} r={sz} fill="rgba(12,12,12,0.25)"/>;
+        })
+      )}
+    </svg>
+  );
+};
+
+/* Desk photo mockup */
+const DeskPhoto = ({ width, height }) => (
+  <svg width={width} height={height} style={{display:'block'}}>
+    <rect width={width} height={height} fill="#e8e6e2"/>
+    {/* Grid lines */}
+    {Array.from({length:8},(_,i)=>(
+      <line key={`h${i}`} x1={0} y1={(i+1)*height/9} x2={width} y2={(i+1)*height/9}
+        stroke="rgba(12,12,12,0.08)" strokeWidth="0.5"/>
+    ))}
+    {Array.from({length:6},(_,i)=>(
+      <line key={`v${i}`} x1={(i+1)*width/7} y1={0} x2={(i+1)*width/7} y2={height}
+        stroke="rgba(12,12,12,0.08)" strokeWidth="0.5"/>
+    ))}
+    {/* Desk surface */}
+    <rect x={0} y={height*0.55} width={width} height={height*0.45} fill="#d8d5cf"/>
+    {/* Objects */}
+    {/* Monitor */}
+    <rect x={width*0.25} y={height*0.12} width={width*0.5} height={height*0.32} fill="#c8c5bf" rx="2"/>
+    <rect x={width*0.38} y={height*0.44} width={width*0.24} height={height*0.04} fill="#bbb8b2"/>
+    {/* Keyboard */}
+    <rect x={width*0.22} y={height*0.62} width={width*0.45} height={height*0.07} fill="#ccc9c3" rx="2"/>
+    {/* Mug */}
+    <rect x={width*0.72} y={height*0.58} width={width*0.1} height={height*0.14} fill="#b8b5af" rx="2"/>
+    {/* Books */}
+    <rect x={width*0.08} y={height*0.57} width={width*0.08} height={height*0.22} fill="#a8a5a0"/>
+    <rect x={width*0.12} y={height*0.59} width={width*0.06} height={height*0.2} fill="#b2afaa"/>
+    {/* Plant */}
+    <ellipse cx={width*0.86} cy={height*0.52} rx={width*0.07} ry={height*0.09} fill="#9a9890"/>
+    <rect x={width*0.83} y={height*0.6} width={width*0.06} height={height*0.1} fill="#8a8780" rx="1"/>
+    {/* Corner label */}
+    <text x={6} y={height-6} fontFamily="IBM Plex Mono" fontSize="7" fill="rgba(12,12,12,0.3)" letterSpacing="0.05em">DESK.JPG</text>
+  </svg>
+);
+
+/* ═══════════════════════════════════════
+   SCREEN 1: LANDING
+═══════════════════════════════════════ */
+const LandingScreen = () => (
+  <div className="phone">
+    <Halftone width={390} height={844}/>
+    <div className="screen-content" style={{justifyContent:'space-between'}}>
+      <StatusBar/>
+
+      {/* Top meta */}
+      <div style={{padding:'8px 24px 0', display:'flex', justifyContent:'space-between', alignItems:'center', position:'relative', zIndex:1}}>
+        <span style={{fontSize:'8px', letterSpacing:'0.2em', color:'var(--gray3)', textTransform:'uppercase'}}>System v0.4.1</span>
+        <span style={{fontSize:'8px', letterSpacing:'0.2em', color:'var(--gray3)', textTransform:'uppercase'}}>PAB</span>
+      </div>
+
+      {/* Center hero */}
+      <div style={{padding:'0 24px', flexGrow:1, display:'flex', flexDirection:'column', justifyContent:'center', gap: 0}}>
+        {/* Point cloud hero */}
+        <div style={{position:'relative', height:260, marginBottom:24}}>
+          <PointCloud width={342} height={260} density={180}/>
+          {/* Crosshair */}
+          <svg style={{position:'absolute',inset:0}} width={342} height={260}>
+            <line x1={171} y1={0} x2={171} y2={260} stroke="rgba(12,12,12,0.1)" strokeWidth="0.5" strokeDasharray="3,6"/>
+            <line x1={0} y1={130} x2={342} y2={130} stroke="rgba(12,12,12,0.1)" strokeWidth="0.5" strokeDasharray="3,6"/>
+            <circle cx={171} cy={130} r={4} fill="none" stroke="rgba(12,12,12,0.4)" strokeWidth="1"/>
+          </svg>
+        </div>
+
+        {/* Title block */}
+        <div style={{borderTop:'1px solid var(--gray1)', paddingTop:16}}>
+          <div style={{fontSize:'8px', letterSpacing:'0.25em', color:'var(--gray3)', textTransform:'uppercase', marginBottom:6}}>
+            Research instrument
+          </div>
+          <h1 style={{fontFamily:'var(--mono)', fontSize:'22px', fontWeight:500, lineHeight:1.15, letterSpacing:'-0.01em', color:'var(--ink)', marginBottom:10}}>
+            Portable<br/>Attention Box
+          </h1>
+          <p style={{fontFamily:'var(--sans)', fontSize:'11px', color:'var(--gray3)', lineHeight:1.6, fontWeight:300, maxWidth:280}}>
+            A personal attention database for workspace arrangements
+          </p>
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div style={{padding:'0 0 40px'}}>
+        <button className="btn-primary" style={{marginBottom:2}}>
+          <span>Start New Record</span>
+          <span style={{opacity:0.5}}>→</span>
+        </button>
+        <button className="btn-ghost">
+          <span>View Archive</span>
+          <span style={{opacity:0.4}}>→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+/* ═══════════════════════════════════════
+   SCREEN 2: CAPTURE
+═══════════════════════════════════════ */
+const CaptureScreen = () => (
+  <div className="phone">
+    <div className="screen-content">
+      <StatusBar/>
+      <NavBar title="New Record" back="Home"/>
+
+      {/* Step indicator */}
+      <div style={{padding:'10px 20px', display:'flex', gap:4, alignItems:'center'}}>
+        {[1,2,3,4].map(n => (
+          <div key={n} style={{
+            height:2, flex:1,
+            background: n===1 ? 'var(--ink)' : 'var(--gray1)'
+          }}/>
+        ))}
+        <span style={{fontSize:'8px', letterSpacing:'0.15em', color:'var(--gray3)', marginLeft:6}}>1/4</span>
+      </div>
+
+      {/* Label */}
+      <div style={{padding:'8px 20px 12px'}}>
+        <div className="field-label" style={{marginBottom:2}}>Step 01 — Capture</div>
+        <p style={{fontFamily:'var(--sans)', fontSize:'11px', color:'var(--gray3)', lineHeight:1.5}}>
+          Frame your desk from the same angle each time
+        </p>
+      </div>
+
+      {/* Camera viewfinder */}
+      <div style={{margin:'0 20px', position:'relative', border:'1px solid var(--gray1)'}}>
+        <div style={{
+          height:280, background:'var(--paper2)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          position:'relative', overflow:'hidden'
+        }}>
+          {/* Grid overlay */}
+          <svg style={{position:'absolute',inset:0,width:'100%',height:'100%'}}>
+            <line x1="33%" y1="0" x2="33%" y2="100%" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5"/>
+            <line x1="66%" y1="0" x2="66%" y2="100%" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5"/>
+            <line x1="0" y1="33%" x2="100%" y2="33%" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5"/>
+            <line x1="0" y1="66%" x2="100%" y2="66%" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5"/>
+            {/* Corner brackets */}
+            <path d="M12,12 L12,28 M12,12 L28,12" stroke="rgba(12,12,12,0.5)" strokeWidth="1.5" fill="none"/>
+            <path d="M338,12 L338,28 M338,12 L322,12" stroke="rgba(12,12,12,0.5)" strokeWidth="1.5" fill="none"/>
+            <path d="M12,268 L12,252 M12,268 L28,268" stroke="rgba(12,12,12,0.5)" strokeWidth="1.5" fill="none"/>
+            <path d="M338,268 L338,252 M338,268 L322,268" stroke="rgba(12,12,12,0.5)" strokeWidth="1.5" fill="none"/>
+          </svg>
+          {/* Camera icon */}
+          <div style={{textAlign:'center', zIndex:1}}>
+            <svg width="40" height="34" viewBox="0 0 40 34" fill="none" style={{opacity:0.3}}>
+              <rect x="1" y="8" width="38" height="25" rx="2" stroke="#0c0c0c" strokeWidth="1.5"/>
+              <path d="M14 8 L16 2 L24 2 L26 8" stroke="#0c0c0c" strokeWidth="1.5"/>
+              <circle cx="20" cy="20" r="7" stroke="#0c0c0c" strokeWidth="1.5"/>
+              <circle cx="20" cy="20" r="3" stroke="#0c0c0c" strokeWidth="1"/>
+              <circle cx="32" cy="13" r="1.5" fill="#0c0c0c" opacity="0.5"/>
+            </svg>
+            <div style={{marginTop:8, fontSize:'9px', color:'var(--gray3)', letterSpacing:'0.1em'}}>
+              CAMERA INACTIVE
+            </div>
+          </div>
+        </div>
+        {/* Metadata strip */}
+        <div style={{
+          padding:'6px 10px', background:'rgba(12,12,12,0.03)',
+          borderTop:'1px solid var(--gray1)',
+          display:'flex', justifyContent:'space-between',
+          fontSize:'8px', letterSpacing:'0.1em', color:'var(--gray3)'
+        }}>
+          <span>ALIGN WITH PREVIOUS RECORD</span>
+          <span>↕ LEVEL</span>
+        </div>
+      </div>
+
+      {/* Or upload */}
+      <div style={{padding:'14px 20px', display:'flex', alignItems:'center', gap:10}}>
+        <div style={{flex:1, height:'1px', background:'var(--gray1)'}}/>
+        <span style={{fontSize:'8px', color:'var(--gray3)', letterSpacing:'0.15em'}}>OR</span>
+        <div style={{flex:1, height:'1px', background:'var(--gray1)'}}/>
+      </div>
+
+      <div style={{padding:'0 20px', marginBottom:4}}>
+        <button className="btn-ghost" style={{padding:'11px 20px'}}>
+          <span style={{fontSize:'10px'}}>Upload Photo from Library</span>
+          <span style={{opacity:0.4}}>↑</span>
+        </button>
+      </div>
+
+      {/* Previous reference */}
+      <div style={{margin:'14px 20px 0', padding:'10px', border:'1px solid var(--gray1)', display:'flex', gap:10, alignItems:'center'}}>
+        <div style={{width:44, height:44, background:'var(--paper2)', border:'1px solid var(--gray1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+          <span style={{fontSize:'7px', color:'var(--gray3)', letterSpacing:'0.05em'}}>REF</span>
+        </div>
+        <div>
+          <div style={{fontSize:'8px', letterSpacing:'0.1em', color:'var(--gray3)', textTransform:'uppercase', marginBottom:2}}>Last capture</div>
+          <div style={{fontSize:'10px', color:'var(--ink)'}}>Mar 12, 2025 — 9:14am</div>
+        </div>
+      </div>
+
+      <div style={{flexGrow:1}}/>
+      <button className="btn-primary" style={{margin:'0 0 0'}}>
+        <span>Take Desk Photo</span>
+        <span style={{fontSize:'14px', opacity:0.5}}>◉</span>
+      </button>
+    </div>
+  </div>
+);
+
+/* ═══════════════════════════════════════
+   SCREEN 3: SPATIAL PROCESSING
+═══════════════════════════════════════ */
+const ProcessingScreen = () => (
+  <div className="phone">
+    <div className="screen-content">
+      <StatusBar/>
+      <NavBar title="Spatial Processing" back="Capture"/>
+
+      {/* Step indicator */}
+      <div style={{padding:'10px 20px', display:'flex', gap:4, alignItems:'center'}}>
+        {[1,2,3,4].map(n => (
+          <div key={n} style={{height:2, flex:1, background: n<=2 ? 'var(--ink)' : 'var(--gray1)'}}/>
+        ))}
+        <span style={{fontSize:'8px', letterSpacing:'0.15em', color:'var(--gray3)', marginLeft:6}}>2/4</span>
+      </div>
+
+      {/* Two-panel view */}
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, margin:'8px 20px', border:'1px solid var(--gray1)'}}>
+        {/* Photo panel */}
+        <div style={{position:'relative'}}>
+          <DeskPhoto width={174} height={200}/>
+          <div style={{
+            position:'absolute', bottom:0, left:0, right:0,
+            padding:'4px 6px', background:'rgba(248,247,245,0.85)',
+            borderTop:'1px solid var(--gray1)'
+          }}>
+            <span style={{fontSize:'7px', letterSpacing:'0.12em', color:'var(--gray3)', textTransform:'uppercase'}}>Source Image</span>
+          </div>
+        </div>
+        {/* Point cloud panel */}
+        <div style={{background:'var(--paper2)', position:'relative'}}>
+          <PointCloud width={174} height={200} density={90}/>
+          <div style={{
+            position:'absolute', bottom:0, left:0, right:0,
+            padding:'4px 6px', background:'rgba(239,239,237,0.85)',
+            borderTop:'1px solid var(--gray1)'
+          }}>
+            <span style={{fontSize:'7px', letterSpacing:'0.12em', color:'var(--gray3)', textTransform:'uppercase'}}>Spatial Record</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Axes label */}
+      <div style={{padding:'4px 20px', display:'flex', gap:16}}>
+        {['X — Horizontal', 'Y — Vertical', 'Z — Depth'].map(a => (
+          <span key={a} style={{fontSize:'7px', letterSpacing:'0.08em', color:'var(--gray3)'}}>{a}</span>
+        ))}
+      </div>
+
+      <div className="divider" style={{margin:'8px 20px'}}/>
+
+      {/* Processing log */}
+      <div style={{padding:'8px 20px'}}>
+        <div className="field-label" style={{marginBottom:10}}>Processing Log</div>
+        {[
+          {label:'Translating desk image into spatial record', state:'done'},
+          {label:'Detecting object density', state:'done'},
+          {label:'Mapping attention environment', state:'active'},
+        ].map((item,i) => (
+          <div key={i} className="processing-item" style={{
+            opacity: item.state === 'waiting' ? 0.4 : 1
+          }}>
+            <div className={`processing-dot ${item.state}`}/>
+            <span style={{color: item.state==='active' ? 'var(--ink)' : 'var(--gray3)'}}>{item.label}</span>
+            {item.state==='done' && <span style={{marginLeft:'auto', fontSize:'8px', color:'var(--gray3)'}}>✓</span>}
+          </div>
+        ))}
+      </div>
+
+      <div className="divider" style={{margin:'4px 20px'}}/>
+
+      {/* Object detection summary */}
+      <div style={{padding:'12px 20px'}}>
+        <div className="field-label" style={{marginBottom:8}}>Detected Objects</div>
+        <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
+          {['Monitor ×1','Keyboard ×1','Coffee Mug ×1','Books ×2','Plant ×1'].map(obj => (
+            <span key={obj} style={{
+              padding:'3px 8px', border:'1px solid var(--gray1)',
+              fontSize:'8px', letterSpacing:'0.08em', color:'var(--gray3)'
+            }}>{obj}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Object density map */}
+      <div style={{margin:'0 20px', border:'1px solid var(--gray1)', padding:'8px 10px', background:'var(--paper2)'}}>
+        <div className="field-label" style={{marginBottom:4}}>Density Distribution</div>
+        <div style={{display:'flex', gap:2, alignItems:'flex-end', height:28}}>
+          {[0.3,0.5,0.7,0.9,0.75,0.6,0.4,0.55,0.8,0.65,0.45,0.35].map((v,i) => (
+            <div key={i} style={{
+              flex:1, background:'var(--ink)', opacity: 0.2 + v*0.7,
+              height: `${v*100}%`, minHeight:2
+            }}/>
+          ))}
+        </div>
+      </div>
+
+      <div style={{flexGrow:1}}/>
+      <button className="btn-primary">
+        <span>Continue to Log</span>
+        <span style={{opacity:0.5}}>→</span>
+      </button>
+    </div>
+  </div>
+);
+
+/* ═══════════════════════════════════════
+   SCREEN 4: ATTENTION LOG
+═══════════════════════════════════════ */
+const AttentionLogScreen = () => (
+  <div className="phone">
+    <div className="screen-content">
+      <StatusBar/>
+      <NavBar title="Attention Log" back="Processing"/>
+
+      {/* Step indicator */}
+      <div style={{padding:'10px 20px', display:'flex', gap:4, alignItems:'center'}}>
+        {[1,2,3,4].map(n => (
+          <div key={n} style={{height:2, flex:1, background: n<=3 ? 'var(--ink)' : 'var(--gray1)'}}/>
+        ))}
+        <span style={{fontSize:'8px', letterSpacing:'0.15em', color:'var(--gray3)', marginLeft:6}}>3/4</span>
+      </div>
+
+      {/* Focus Level */}
+      <div style={{padding:'14px 20px 8px'}}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:8}}>
+          <div className="field-label" style={{marginBottom:0}}>Focus Level</div>
+          <div style={{fontSize:'22px', fontWeight:500, fontFamily:'var(--mono)', letterSpacing:'-0.02em'}}>
+            72<span style={{fontSize:'12px', color:'var(--gray3)'}}>%</span>
+          </div>
+        </div>
+        <div className="focus-slider-track">
+          <div className="focus-slider-fill" style={{width:'72%'}}/>
+          <div className="focus-slider-thumb" style={{left:'72%'}}/>
+        </div>
+        <div className="slider-labels">
+          <span>0 — Scattered</span>
+          <span>50 — Moderate</span>
+          <span>100 — Deep</span>
+        </div>
+
+        {/* Focus ticks */}
+        <div style={{display:'flex', gap:1, marginTop:8}}>
+          {Array.from({length:20},(_,i) => (
+            <div key={i} style={{
+              flex:1, height:4,
+              background: i < 14 ? 'var(--ink)' : 'var(--gray1)',
+              opacity: i < 14 ? 0.15 + (i/14)*0.75 : 1
+            }}/>
+          ))}
+        </div>
+      </div>
+
+      <div className="divider"/>
+
+      {/* Mood */}
+      <div className="section" style={{paddingBottom:12}}>
+        <div className="field-label" style={{marginBottom:8}}>Current Mood</div>
+        <input className="text-input" placeholder="e.g. calm, restless, energized…"/>
+        <div style={{display:'flex', gap:5, marginTop:8, flexWrap:'wrap'}}>
+          {['Calm','Focused','Anxious','Restless','Alert','Tired'].map(m => (
+            <button key={m} className={`chip ${m==='Calm'?'active':''}`}>{m}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="divider"/>
+
+      {/* Lighting */}
+      <div className="section" style={{paddingBottom:12}}>
+        <div className="field-label" style={{marginBottom:8}}>Lighting Condition</div>
+        <div className="chip-row">
+          {['Bright','Soft','Dim','Direct Sun','Artificial'].map((l,i) => (
+            <button key={l} className={`chip ${i===1?'active':''}`}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="divider"/>
+
+      {/* Notes */}
+      <div className="section" style={{paddingBottom:12}}>
+        <div className="field-label" style={{marginBottom:8}}>Field Notes</div>
+        <textarea className="notes-area" placeholder="Observations about this session…" rows={3}></textarea>
+      </div>
+
+      {/* Timestamp */}
+      <div style={{padding:'0 20px 10px', display:'flex', justifyContent:'space-between'}}>
+        <span style={{fontSize:'8px', color:'var(--gray3)', letterSpacing:'0.1em'}}>RECORD ID — PAB-2025-0412-041</span>
+        <span style={{fontSize:'8px', color:'var(--gray3)', letterSpacing:'0.1em'}}>9:41 AM</span>
+      </div>
+
+      <button className="btn-primary" style={{marginTop:'auto'}}>
+        <span>Save Record</span>
+        <span style={{opacity:0.5}}>→</span>
+      </button>
+    </div>
+  </div>
+);
+
+/* ═══════════════════════════════════════
+   SCREEN 5: ARCHIVE
+═══════════════════════════════════════ */
+const ArchiveScreen = () => {
+  const records = [
+    {id:'041', date:'Apr 12, 2025', time:'9:41am', focus:72, mood:'Calm', light:'Soft'},
+    {id:'040', date:'Apr 11, 2025', time:'8:15am', focus:88, mood:'Focused', light:'Bright'},
+    {id:'039', date:'Apr 9, 2025', time:'2:02pm', focus:45, mood:'Restless', light:'Artificial'},
+    {id:'038', date:'Apr 7, 2025', time:'10:30am', focus:61, mood:'Alert', light:'Soft'},
+  ];
+  return (
+    <div className="phone">
+      <div className="screen-content">
+        <StatusBar/>
+        {/* Header */}
+        <div style={{padding:'12px 20px', borderBottom:'1px solid var(--gray1)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <div>
+            <div style={{fontSize:'8px', letterSpacing:'0.2em', color:'var(--gray3)', textTransform:'uppercase', marginBottom:2}}>Portable Attention Box</div>
+            <div style={{fontSize:'16px', fontWeight:500, letterSpacing:'-0.01em'}}>Attention Archive</div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:'22px', fontWeight:500}}>41</div>
+            <div style={{fontSize:'8px', letterSpacing:'0.1em', color:'var(--gray3)'}}>records</div>
+          </div>
+        </div>
+
+        {/* Filter bar */}
+        <div style={{padding:'8px 20px', display:'flex', gap:5, borderBottom:'1px solid var(--gray1)'}}>
+          {['All','High Focus','Low Focus','This Week'].map((f,i) => (
+            <button key={f} className={`chip ${i===0?'active':''}`} style={{fontSize:'7px', padding:'3px 7px'}}>{f}</button>
+          ))}
+        </div>
+
+        {/* Records list */}
+        <div style={{overflowY:'auto', flex:1, paddingTop:12, display:'flex', flexDirection:'column', gap:8}}>
+          {records.map((r,i) => (
+            <div key={i} className="archive-card">
+              {/* Photo thumb */}
+              <div className="thumb-box">
+                <DeskPhoto width={56} height={56}/>
+              </div>
+              {/* Cloud thumb */}
+              <div className="thumb-box">
+                <PointCloud width={56} height={56} density={40}/>
+              </div>
+              {/* Meta */}
+              <div className="archive-meta">
+                <div className="date">{r.date}</div>
+                <div>{r.time}</div>
+                <div style={{margin:'3px 0'}}>
+                  <span className="focus-pill">{r.focus}% focus</span>
+                </div>
+                <div>{r.mood} · {r.light}</div>
+              </div>
+              {/* Bottom border accents */}
+            </div>
+          ))}
+
+          {/* Load more */}
+          <button className="btn-ghost" style={{margin:'4px 20px 20px', width:'calc(100% - 40px)'}}>
+            <span>Load Earlier Records</span>
+            <span style={{opacity:0.4}}>↓</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════
+   SCREEN 6: RECALL MODE
+═══════════════════════════════════════ */
+const RecallScreen = () => (
+  <div className="phone">
+    <div className="screen-content">
+      <StatusBar/>
+      <NavBar title="Recall Mode" back="Archive"/>
+
+      {/* Intro */}
+      <div style={{padding:'14px 20px 10px'}}>
+        <div className="field-label" style={{marginBottom:4}}>Attention Retrieval</div>
+        <p style={{fontFamily:'var(--sans)', fontSize:'11px', color:'var(--gray3)', lineHeight:1.6}}>
+          Configurations closest to your desired attention state
+        </p>
+      </div>
+
+      {/* Desired focus input */}
+      <div style={{margin:'0 20px', border:'1px solid var(--ink)', padding:'14px'}}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:10}}>
+          <div className="field-label" style={{marginBottom:0}}>Desired Focus Level</div>
+          <div style={{fontSize:'28px', fontWeight:500, letterSpacing:'-0.02em'}}>
+            85<span style={{fontSize:'13px', color:'var(--gray3)'}}>%</span>
+          </div>
+        </div>
+        <div className="focus-slider-track">
+          <div className="focus-slider-fill" style={{width:'85%'}}/>
+          <div className="focus-slider-thumb" style={{left:'85%'}}/>
+        </div>
+        <div className="slider-labels"><span>0</span><span>50</span><span>100</span></div>
+      </div>
+
+      <div style={{padding:'10px 20px'}}>
+        <div className="field-label" style={{marginBottom:6}}>Mood Preference</div>
+        <div className="chip-row">
+          {['Any','Calm','Focused','Alert'].map((m,i) => (
+            <button key={m} className={`chip ${i===2?'active':''}`}>{m}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{margin:'0 20px 12px'}}>
+        <button className="btn-primary">
+          <span>Find Matching Configuration</span>
+          <span style={{opacity:0.5}}>⌕</span>
+        </button>
+      </div>
+
+      <div className="divider"/>
+
+      {/* Results */}
+      <div style={{padding:'10px 20px 6px'}}>
+        <div className="field-label">
+          Matched Records
+          <span style={{marginLeft:6, fontStyle:'normal', color:'var(--ink)', letterSpacing:0}}>3</span>
+        </div>
+      </div>
+
+      <div style={{display:'flex', flexDirection:'column', gap:8, paddingBottom:20}}>
+        {[
+          {id:'040',date:'Apr 11',focus:88,mood:'Focused',light:'Bright',match:97},
+          {id:'038',date:'Apr 7',focus:82,mood:'Alert',light:'Soft',match:91},
+          {id:'035',date:'Mar 30',focus:79,mood:'Calm',light:'Bright',match:84},
+        ].map((r,i) => (
+          <div key={i} className="recall-card">
+            <div style={{display:'grid', gridTemplateColumns:'48px 48px 1fr', gap:10, alignItems:'start'}}>
+              <div className="thumb-box" style={{width:48, height:48}}>
+                <DeskPhoto width={48} height={48}/>
+              </div>
+              <div className="thumb-box" style={{width:48, height:48}}>
+                <PointCloud width={48} height={48} density={30}/>
+              </div>
+              <div>
+                <div style={{fontSize:'10px', fontWeight:500, color:'var(--ink)', marginBottom:2}}>
+                  {r.date} — {r.focus}% focus
+                </div>
+                <div style={{fontSize:'8px', color:'var(--gray3)', letterSpacing:'0.06em', marginBottom:5}}>
+                  {r.mood} · {r.light}
+                </div>
+                <div style={{display:'flex', alignItems:'center', gap:6}}>
+                  <div className="recall-match-bar" style={{flex:1}}>
+                    <div className="recall-match-fill" style={{width:`${r.match}%`}}/>
+                  </div>
+                  <span style={{fontSize:'8px', fontWeight:500, letterSpacing:'0.08em', whiteSpace:'nowrap'}}>{r.match}% match</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+/* ═══════════════════════════════════════
+   SCREEN 7: RECORD DETAIL
+═══════════════════════════════════════ */
+const DetailScreen = () => (
+  <div className="phone">
+    <div className="screen-content">
+      <StatusBar/>
+      <NavBar title="Record Detail" back="Archive"/>
+
+      {/* Record ID header */}
+      <div style={{padding:'8px 20px 10px', borderBottom:'1px solid var(--gray1)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+        <div>
+          <div style={{fontSize:'8px', letterSpacing:'0.2em', color:'var(--gray3)', marginBottom:1}}>PAB-2025-0412-040</div>
+          <div style={{fontSize:'13px', fontWeight:500}}>Apr 11, 2025 — 8:15am</div>
+        </div>
+        <div style={{padding:'3px 8px', border:'1px solid var(--ink)', fontSize:'8px', letterSpacing:'0.1em'}}>
+          88% focus
+        </div>
+      </div>
+
+      {/* Dual visual */}
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, margin:'12px 20px', border:'1px solid var(--gray1)'}}>
+        <div style={{position:'relative'}}>
+          <DeskPhoto width={174} height={170}/>
+          <div style={{
+            position:'absolute', bottom:0, left:0, right:0, padding:'3px 6px',
+            background:'rgba(248,247,245,0.85)', borderTop:'1px solid var(--gray1)'
+          }}>
+            <span style={{fontSize:'7px', letterSpacing:'0.1em', color:'var(--gray3)'}}>PHOTOGRAPH</span>
+          </div>
+        </div>
+        <div style={{background:'var(--paper2)', position:'relative'}}>
+          <PointCloud width={174} height={170} density={85}/>
+          <div style={{
+            position:'absolute', bottom:0, left:0, right:0, padding:'3px 6px',
+            background:'rgba(239,239,237,0.85)', borderTop:'1px solid var(--gray1)'
+          }}>
+            <span style={{fontSize:'7px', letterSpacing:'0.1em', color:'var(--gray3)'}}>POINT CLOUD</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats grid */}
+      <div style={{padding:'0 20px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12}}>
+        <div className="detail-stat">
+          <span className="s-label">Focus Level</span>
+          <span className="s-value">88%</span>
+        </div>
+        <div className="detail-stat">
+          <span className="s-label">Mood</span>
+          <span className="s-value">Focused</span>
+        </div>
+        <div className="detail-stat">
+          <span className="s-label">Lighting</span>
+          <span className="s-value">Bright</span>
+        </div>
+        <div className="detail-stat">
+          <span className="s-label">Duration</span>
+          <span className="s-value">2h 14m</span>
+        </div>
+      </div>
+
+      <div className="divider" style={{margin:'0 20px 12px'}}/>
+
+      {/* Object list */}
+      <div style={{padding:'0 20px 10px'}}>
+        <div className="field-label" style={{marginBottom:6}}>Detected Objects</div>
+        <div style={{display:'flex', flexWrap:'wrap', gap:4}}>
+          {['Monitor ×1','Keyboard ×1','Mug ×1','Books ×2','Plant ×1'].map(o => (
+            <span key={o} style={{padding:'2px 7px', border:'1px solid var(--gray1)', fontSize:'8px', color:'var(--gray3)', letterSpacing:'0.06em'}}>{o}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div style={{margin:'0 20px 10px', padding:'10px', background:'var(--paper2)', border:'1px solid var(--gray1)'}}>
+        <div className="field-label" style={{marginBottom:5}}>Field Notes</div>
+        <p style={{fontFamily:'var(--sans)', fontSize:'11px', color:'var(--gray3)', lineHeight:1.6}}>
+          Morning session. Light came from left window. Monitor slightly above eye level. Good sustained focus — plant may be contributing positively.
+        </p>
+      </div>
+
+      {/* Focus bar */}
+      <div style={{padding:'0 20px 12px'}}>
+        <div style={{display:'flex', justifyContent:'space-between', fontSize:'8px', color:'var(--gray3)', letterSpacing:'0.08em', marginBottom:4}}>
+          <span>Focus distribution</span><span>88%</span>
+        </div>
+        <div style={{height:3, background:'var(--gray1)', position:'relative'}}>
+          <div style={{position:'absolute', left:0, top:0, height:'100%', width:'88%', background:'var(--ink)'}}/>
+        </div>
+      </div>
+
+      <button className="btn-primary" style={{marginTop:'auto'}}>
+        <span>Recreate This Setup</span>
+        <span style={{opacity:0.5}}>↻</span>
+      </button>
+    </div>
+  </div>
+);
+
+/* ═══════════════════════════════════════
+   APP: DESIGN CANVAS WRAPPER
+═══════════════════════════════════════ */
+const App = () => (
+  <DesignCanvas title="Portable Attention Box — UI Mockup">
+    <DCSection id="flow" title="User Flow">
+      <DCArtboard id="s1" label="01 Landing" width={390} height={844}>
+        <LandingScreen/>
+      </DCArtboard>
+      <DCArtboard id="s2" label="02 Capture" width={390} height={844}>
+        <CaptureScreen/>
+      </DCArtboard>
+      <DCArtboard id="s3" label="03 Spatial Processing" width={390} height={844}>
+        <ProcessingScreen/>
+      </DCArtboard>
+      <DCArtboard id="s4" label="04 Attention Log" width={390} height={844}>
+        <AttentionLogScreen/>
+      </DCArtboard>
+      <DCArtboard id="s5" label="05 Archive" width={390} height={844}>
+        <ArchiveScreen/>
+      </DCArtboard>
+      <DCArtboard id="s6" label="06 Recall Mode" width={390} height={844}>
+        <RecallScreen/>
+      </DCArtboard>
+      <DCArtboard id="s7" label="07 Record Detail" width={390} height={844}>
+        <DetailScreen/>
+      </DCArtboard>
+    </DCSection>
+  </DesignCanvas>
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+<div id="root"></div>
+</body>
+</html>

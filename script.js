@@ -12,6 +12,7 @@
   "use strict";
 
   const STORAGE_KEY = "portableAttentionBox_records_v1";
+  const VIEW_MODE_KEY = "portableAttentionBox_viewMode_v1";
   let currentPhotoDataUrl = "";
   let currentCloudSeed = "";
   let cameraStream = null;
@@ -426,6 +427,34 @@
     });
   }
 
+  function setupViewToggle() {
+    const toggleButton = document.getElementById("btn-view-toggle");
+    if (!toggleButton) return;
+
+    function applyMode(mode) {
+      document.body.classList.remove("force-mobile", "force-desktop");
+      if (mode === "mobile") {
+        document.body.classList.add("force-mobile");
+      } else if (mode === "desktop") {
+        document.body.classList.add("force-desktop");
+      }
+      toggleButton.textContent = mode === "mobile" ? "Desktop View" : "Mobile View";
+    }
+
+    let mode = localStorage.getItem(VIEW_MODE_KEY) || "auto";
+    if (mode === "auto") {
+      mode = window.innerWidth >= 900 ? "desktop" : "mobile";
+    }
+    applyMode(mode);
+
+    toggleButton.addEventListener("click", function () {
+      const isDesktop = document.body.classList.contains("force-desktop");
+      const nextMode = isDesktop ? "mobile" : "desktop";
+      localStorage.setItem(VIEW_MODE_KEY, nextMode);
+      applyMode(nextMode);
+    });
+  }
+
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     window.addEventListener("load", function () {
@@ -461,6 +490,7 @@
     window.addEventListener("beforeunload", stopCamera);
 
     setupPwaInstall();
+    setupViewToggle();
     registerServiceWorker();
     showPage(getPageFromHash());
   }

@@ -7,27 +7,31 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Portable Attention Box — Attention Database</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Site chrome: title + primary navigation -->
-  <header class="site-header">
-    <div class="header-inner">
-      <a href="#home" class="site-title" data-nav="home">Portable Attention Box</a>
-      <nav class="site-nav" aria-label="Main">
-        <a href="#home" data-nav="home">Home</a>
-        <a href="#new" data-nav="new">New Entry</a>
-        <a href="#archive" data-nav="archive">Archive</a>
-        <a href="#recall" data-nav="recall">Recall Mode</a>
-        <button type="button" id="btn-install" class="btn btn--small hidden">Install</button>
-      </nav>
-    </div>
-  </header>
+  <div class="app-shell">
+    <!-- Site chrome: title + primary navigation -->
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="#home" class="site-title" data-nav="home">Portable Attention Box</a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="#home" data-nav="home">Home</a>
+          <a href="#new" data-nav="new">New Entry</a>
+          <a href="#archive" data-nav="archive">Archive</a>
+          <a href="#recall" data-nav="recall">Recall Mode</a>
+          <button type="button" id="btn-view-toggle" class="btn btn--small">Desktop View</button>
+        </nav>
+      </div>
+    </header>
 
-  <main class="main">
+    <main class="main">
     <!-- Section 1: Project introduction + system diagram -->
     <section id="page-home" class="page page--active" aria-labelledby="home-heading">
       <div class="page-inner">
@@ -68,67 +72,68 @@
       <div class="page-inner">
         <h1 id="new-heading" class="page-title">New Entry</h1>
         <p class="section-intro">Document a desk session. Generate a placeholder spatial record, then save to the archive.</p>
+        <div class="new-entry-layout">
+          <form id="entry-form" class="entry-form">
+            <div class="form-grid">
+              <label class="field">
+                <span class="field-label">Capture desk photo</span>
+                <div class="camera-actions">
+                  <button type="button" id="btn-start-camera" class="btn">Start Camera</button>
+                  <button type="button" id="btn-capture-photo" class="btn" disabled>Capture</button>
+                  <button type="button" id="btn-stop-camera" class="btn" disabled>Stop</button>
+                </div>
+                <video id="camera-video" class="camera-video hidden" playsinline autoplay muted></video>
+                <p id="camera-status" class="camera-status">Camera is off. You can also upload a photo file below.</p>
+              </label>
+              <label class="field">
+                <span class="field-label">Or upload photo file</span>
+                <input type="file" id="photo-input" accept="image/*" />
+              </label>
+              <label class="field">
+                <span class="field-label">Date</span>
+                <input type="date" id="entry-date" required />
+              </label>
+              <label class="field">
+                <span class="field-label">Attention / focus (0–100%)</span>
+                <input type="number" id="entry-focus" min="0" max="100" step="1" value="50" required />
+              </label>
+              <label class="field">
+                <span class="field-label">Mood / feeling</span>
+                <input type="text" id="entry-mood" placeholder="e.g. calm, restless" />
+              </label>
+              <label class="field">
+                <span class="field-label">Lighting condition</span>
+                <input type="text" id="entry-lighting" placeholder="e.g. window, lamp only" />
+              </label>
+              <label class="field field--full">
+                <span class="field-label">Notes (desk arrangement)</span>
+                <textarea id="entry-notes" rows="3" placeholder="Objects, layout, clutter…"></textarea>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="button" id="btn-generate" class="btn btn--primary">Generate Spatial Record</button>
+              <button type="button" id="btn-save" class="btn" disabled>Save to Archive</button>
+            </div>
+          </form>
 
-        <form id="entry-form" class="entry-form">
-          <div class="form-grid">
-            <label class="field">
-              <span class="field-label">Capture desk photo</span>
-              <div class="camera-actions">
-                <button type="button" id="btn-start-camera" class="btn">Start Camera</button>
-                <button type="button" id="btn-capture-photo" class="btn" disabled>Capture</button>
-                <button type="button" id="btn-stop-camera" class="btn" disabled>Stop</button>
-              </div>
-              <video id="camera-video" class="camera-video hidden" playsinline autoplay muted></video>
-              <p id="camera-status" class="camera-status">Camera is off. You can also upload a photo file below.</p>
-            </label>
-            <label class="field">
-              <span class="field-label">Or upload photo file</span>
-              <input type="file" id="photo-input" accept="image/*" />
-            </label>
-            <label class="field">
-              <span class="field-label">Date</span>
-              <input type="date" id="entry-date" required />
-            </label>
-            <label class="field">
-              <span class="field-label">Attention / focus (0–100%)</span>
-              <input type="number" id="entry-focus" min="0" max="100" step="1" value="50" required />
-            </label>
-            <label class="field">
-              <span class="field-label">Mood / feeling</span>
-              <input type="text" id="entry-mood" placeholder="e.g. calm, restless" />
-            </label>
-            <label class="field">
-              <span class="field-label">Lighting condition</span>
-              <input type="text" id="entry-lighting" placeholder="e.g. window, lamp only" />
-            </label>
-            <label class="field field--full">
-              <span class="field-label">Notes (desk arrangement)</span>
-              <textarea id="entry-notes" rows="3" placeholder="Objects, layout, clutter…"></textarea>
-            </label>
+          <div id="record-preview" class="record-preview hidden">
+            <h2 class="section-label">Spatial record (prototype)</h2>
+            <div class="preview-split">
+              <figure class="preview-card">
+                <figcaption>Photo input</figcaption>
+                <div class="preview-frame">
+                  <img id="preview-photo" alt="Desk photo preview" />
+                </div>
+              </figure>
+              <figure class="preview-card preview-card--dark">
+                <figcaption>Simulated arrangement / point cloud</figcaption>
+                <div class="preview-frame preview-frame--canvas">
+                  <canvas id="cloud-canvas-main" width="400" height="280" aria-label="Point cloud visualization"></canvas>
+                </div>
+              </figure>
+            </div>
+            <p class="hint">The point cloud is a front-end placeholder (density clusters, no CV). Each save stores a seed so the preview stays consistent in the archive.</p>
           </div>
-          <div class="form-actions">
-            <button type="button" id="btn-generate" class="btn btn--primary">Generate Spatial Record</button>
-            <button type="button" id="btn-save" class="btn" disabled>Save to Archive</button>
-          </div>
-        </form>
-
-        <div id="record-preview" class="record-preview hidden">
-          <h2 class="section-label">Spatial record (prototype)</h2>
-          <div class="preview-split">
-            <figure class="preview-card">
-              <figcaption>Photo input</figcaption>
-              <div class="preview-frame">
-                <img id="preview-photo" alt="Desk photo preview" />
-              </div>
-            </figure>
-            <figure class="preview-card preview-card--dark">
-              <figcaption>Simulated arrangement / point cloud</figcaption>
-              <div class="preview-frame preview-frame--canvas">
-                <canvas id="cloud-canvas-main" width="400" height="280" aria-label="Point cloud visualization"></canvas>
-              </div>
-            </figure>
-          </div>
-          <p class="hint">The point cloud is a front-end placeholder (density clusters, no CV). Each save stores a seed so the preview stays consistent in the archive.</p>
         </div>
       </div>
     </section>
@@ -138,6 +143,12 @@
       <div class="page-inner">
         <h1 id="archive-heading" class="page-title">Archive</h1>
         <p class="section-intro">Local attention records. Data persists in this browser only.</p>
+        <div class="archive-filter-row desktop-only">
+          <button type="button" class="btn btn--small">All</button>
+          <button type="button" class="btn btn--small">High Focus</button>
+          <button type="button" class="btn btn--small">Low Focus</button>
+          <button type="button" class="btn btn--small">This Week</button>
+        </div>
         <div id="archive-empty" class="empty-state hidden">No records yet. Create an entry and save it.</div>
         <div id="archive-grid" class="archive-grid"></div>
       </div>
@@ -148,13 +159,18 @@
       <div class="page-inner">
         <h1 id="recall-heading" class="page-title">Recall Mode</h1>
         <p class="section-intro">Find past desk configurations near a target focus level.</p>
-
-        <div class="recall-controls card">
-          <label class="field field--inline">
-            <span class="field-label">Desired attention level (%)</span>
-            <input type="number" id="recall-target" min="0" max="100" step="1" value="60" />
-          </label>
-          <button type="button" id="btn-recall" class="btn btn--primary">Search archive</button>
+        <div class="recall-layout">
+          <div class="recall-controls card">
+            <label class="field field--inline">
+              <span class="field-label">Desired attention level (%)</span>
+              <input type="number" id="recall-target" min="0" max="100" step="1" value="60" />
+            </label>
+            <button type="button" id="btn-recall" class="btn btn--primary">Search archive</button>
+          </div>
+          <aside class="recall-panel desktop-only">
+            <h3 class="section-label">Recall panel</h3>
+            <p class="section-intro">Desktop view surfaces matched records and their point-cloud context side by side for fast comparison.</p>
+          </aside>
         </div>
 
         <h2 class="recall-results-title" id="recall-results-heading">Configurations closest to your desired attention state.</h2>
@@ -162,11 +178,13 @@
         <div id="recall-grid" class="archive-grid recall-grid hidden"></div>
       </div>
     </section>
-  </main>
+    </main>
 
-  <footer class="site-footer">
-    <p>Portable Attention Box — personal attention database (local prototype)</p>
-  </footer>
+    <footer class="site-footer">
+      <p>Portable Attention Box — personal attention database</p>
+      <button type="button" id="btn-install" class="btn btn--small hidden">Install App</button>
+    </footer>
+  </div>
 
   <script src="script.js"></script>
 </body>
