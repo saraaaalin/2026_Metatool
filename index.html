@@ -17,6 +17,19 @@
 </head>
 <body>
   <div class="app-shell">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons">
+        <div class="signal-bar" aria-hidden="true">
+          <span style="height:4px"></span>
+          <span style="height:6px"></span>
+          <span style="height:9px"></span>
+          <span style="height:12px"></span>
+        </div>
+        <span class="battery">▮</span>
+      </div>
+    </div>
+
     <!-- Site chrome: title + primary navigation -->
     <header class="site-header">
       <div class="header-inner">
@@ -72,6 +85,13 @@
       <div class="page-inner">
         <h1 id="new-heading" class="page-title">New Entry</h1>
         <p class="section-intro">Document a desk session. Generate a placeholder spatial record, then save to the archive.</p>
+        <div class="step-indicator">
+          <span class="step active"></span>
+          <span class="step active"></span>
+          <span class="step"></span>
+          <span class="step"></span>
+          <em>2/4</em>
+        </div>
         <div class="new-entry-layout">
           <form id="entry-form" class="entry-form">
             <div class="form-grid">
@@ -82,7 +102,10 @@
                   <button type="button" id="btn-capture-photo" class="btn" disabled>Capture</button>
                   <button type="button" id="btn-stop-camera" class="btn" disabled>Stop</button>
                 </div>
-                <video id="camera-video" class="camera-video hidden" playsinline autoplay muted></video>
+                <div class="camera-viewfinder">
+                  <video id="camera-video" class="camera-video hidden" playsinline autoplay muted></video>
+                  <div class="viewfinder-grid" aria-hidden="true"></div>
+                </div>
                 <p id="camera-status" class="camera-status">Camera is off. You can also upload a photo file below.</p>
               </label>
               <label class="field">
