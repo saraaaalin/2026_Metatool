@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portable Attention Box — Website Redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #111; font-family: 'IBM Plex Mono', monospace; }
+</style>
+</head>
+<body>
+<script type="text/babel">
+
+/* ── TOKENS ── */
+const T = {
+  ink: '#0c0c0c', paper: '#f8f7f5', paper2: '#efeeec',
+  gray1: '#d8d6d2', gray2: '#a8a6a1', gray3: '#6b6966',
+  mono: "'IBM Plex Mono', monospace", sans: "'IBM Plex Sans', sans-serif",
+  grid: 'rgba(12,12,12,0.055)',
+};
+
+/* ── SHARED PRIMITIVES ── */
+
+const GridBg = ({ cols = 24, style = {} }) => (
+  <div style={{
+    position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+    backgroundImage: `linear-gradient(${T.grid} 1px, transparent 1px), linear-gradient(90deg, ${T.grid} 1px, transparent 1px)`,
+    backgroundSize: `${cols}px ${cols}px`,
+    ...style
+  }}/>
+);
+
+const PointCloud = ({ width, height, density = 80 }) => {
+  const pts = React.useMemo(() => {
+    const r = [];
+    const cx = width * 0.5, cy = height * 0.5;
+    for (let i = 0; i < density; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const rad = Math.pow(Math.random(), 0.6) * Math.min(width, height) * 0.42;
+      r.push({ x: cx + Math.cos(a)*rad*(0.6+Math.random()*0.8), y: cy + Math.sin(a)*rad*0.7, s: 0.8+Math.random()*2.5, o: 0.15+Math.random()*0.7 });
+    }
+    [[0.25,0.38],[0.55,0.3],[0.74,0.52],[0.38,0.65],[0.62,0.68]].forEach(([fx,fy]) => {
+      for (let j = 0; j < 14; j++) r.push({ x: fx*width+(Math.random()-.5)*36, y: fy*height+(Math.random()-.5)*28, s: 1+Math.random()*3, o: 0.3+Math.random()*0.65 });
+    });
+    return r;
+  }, [width, height, density]);
+  return (
+    <svg width={width} height={height} style={{display:'block'}}>
+      {Array.from({length:Math.ceil(height/20)},(_,i)=>(
+        <line key={`h${i}`} x1={0} y1={i*20} x2={width} y2={i*20} stroke="rgba(12,12,12,0.05)" strokeWidth="0.5"/>
+      ))}
+      {Array.from({length:Math.ceil(width/20)},(_,i)=>(
+        <line key={`v${i}`} x1={i*20} y1={0} x2={i*20} y2={height} stroke="rgba(12,12,12,0.05)" strokeWidth="0.5"/>
+      ))}
+      {pts.slice(0,50).map((p,i)=>pts.slice(i+1,i+3).map((q,j)=>{
+        const d=Math.hypot(q.x-p.x,q.y-p.y);
+        return d<60?<line key={`l${i}-${j}`} x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke="rgba(12,12,12,0.09)" strokeWidth="0.5"/>:null;
+      }))}
+      {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r={p.s} fill={`rgba(12,12,12,${p.o})`}/>)}
+    </svg>
+  );
+};
+
+const DeskThumb = ({ w, h }) => (
+  <svg width={w} height={h} style={{display:'block'}}>
+    <rect width={w} height={h} fill="#eae8e4"/>
+    {Array.from({length:7},(_,i)=><line key={`h${i}`} x1={0} y1={(i+1)*h/8} x2={w} y2={(i+1)*h/8} stroke="rgba(12,12,12,0.06)" strokeWidth="0.5"/>)}
+    {Array.from({length:5},(_,i)=><line key={`v${i}`} x1={(i+1)*w/6} y1={0} x2={(i+1)*w/6} y2={h} stroke="rgba(12,12,12,0.06)" strokeWidth="0.5"/>)}
+    <rect x={0} y={h*0.56} width={w} height={h*0.44} fill="#d4d1cb"/>
+    <rect x={w*0.22} y={h*0.1} width={w*0.56} height={h*0.34} fill="#c6c3bd" rx="2"/>
+    <rect x={w*0.35} y={h*0.44} width={w*0.3} height={h*0.05} fill="#b8b5af"/>
+    <rect x={w*0.2} y={h*0.62} width={w*0.48} height={h*0.08} fill="#ccc9c2" rx="1"/>
+    <rect x={w*0.73} y={h*0.6} width={w*0.1} height={h*0.15} fill="#b4b1aa" rx="2"/>
+    <rect x={w*0.06} y={h*0.58} width={w*0.08} height={h*0.22} fill="#aaa7a0"/>
+    <rect x={w*0.1} y={h*0.6} width={w*0.06} height={h*0.2} fill="#b0ada6"/>
+  </svg>
+);
+
+/* ── SHARED NAV ── */
+const SiteNav = ({ active = 'home' }) => {
+  const links = ['Home','New Entry','Archive','Recall Mode'];
+  return (
+    <nav style={{
+      height: 52, borderBottom: `1px solid ${T.gray1}`,
+      display: 'flex', alignItems: 'center',
+      padding: '0 48px', justifyContent: 'space-between',
+      background: T.paper, position: 'relative', zIndex: 10, flexShrink: 0,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* Logo mark */}
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="0.5" y="0.5" width="15" height="15" stroke={T.ink} strokeWidth="1"/>
+          <line x1="8" y1="0" x2="8" y2="16" stroke={T.ink} strokeWidth="0.5"/>
+          <line x1="0" y1="8" x2="16" y2="8" stroke={T.ink} strokeWidth="0.5"/>
+          <circle cx="8" cy="8" r="2" fill={T.ink}/>
+        </svg>
+        <span style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 500, letterSpacing: '0.04em', color: T.ink }}>
+          Portable Attention Box
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: 0 }}>
+        {links.map(l => {
+          const key = l.toLowerCase().replace(' ', '-');
+          const isActive = active === key || (active === 'home' && l === 'Home') || (active === l.toLowerCase().replace(' ','-'));
+          return (
+            <span key={l} style={{
+              padding: '0 16px', height: 52, display: 'flex', alignItems: 'center',
+              fontFamily: T.mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
+              color: isActive ? T.ink : T.gray3,
+              borderBottom: isActive ? `2px solid ${T.ink}` : '2px solid transparent',
+              cursor: 'pointer',
+            }}>{l}</span>
+          );
+        })}
+      </div>
+    </nav>
+  );
+};
+
+/* ── SITE FOOTER ── */
+const SiteFooter = () => (
+  <footer style={{
+    borderTop: `1px solid ${T.gray1}`, padding: '18px 48px',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    background: T.paper, flexShrink: 0,
+  }}>
+    <span style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.12em', color: T.gray3, textTransform: 'uppercase' }}>
+      Portable Attention Box — personal attention database (local prototype)
+    </span>
+    <span style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.12em', color: T.gray3 }}>
+      v0.4.1
+    </span>
+  </footer>
+);
+
+/* ────────────────────────────────────
+   PAGE 1: HOME
+──────────────────────────────────── */
+const HomePage = () => (
+  <div style={{ width: 1280, minHeight: 800, background: T.paper, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+    <GridBg/>
+    <SiteNav active="home"/>
+
+    {/* Hero */}
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1, position: 'relative', zIndex: 1 }}>
+      {/* Left: text */}
+      <div style={{ padding: '72px 48px 48px', borderRight: `1px solid ${T.gray1}`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: T.gray3, marginBottom: 20 }}>
+            Research Instrument — Spatial Attention Systems
+          </div>
+          <h1 style={{ fontFamily: T.mono, fontSize: 48, fontWeight: 500, lineHeight: 1.1, letterSpacing: '-0.02em', color: T.ink, marginBottom: 28 }}>
+            Portable<br/>Attention<br/>Box
+          </h1>
+          <p style={{ fontFamily: T.sans, fontSize: 14, lineHeight: 1.75, color: T.gray3, fontWeight: 300, maxWidth: 440, marginBottom: 32 }}>
+            This project investigates how <strong style={{ fontWeight: 500, color: T.ink }}>desk arrangements</strong>, <strong style={{ fontWeight: 500, color: T.ink }}>lighting conditions</strong>, and <strong style={{ fontWeight: 500, color: T.ink }}>emotional states</strong> relate to measurable attention and focus. Each session is documented as a spatial record — linking what is on the desk to how it felt to work there.
+          </p>
+          {/* CTA row */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{
+              padding: '13px 24px', background: T.ink, color: T.paper, border: 'none', cursor: 'pointer',
+              fontFamily: T.mono, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              New Entry <span style={{ opacity: 0.5 }}>→</span>
+            </button>
+            <button style={{
+              padding: '13px 24px', background: 'transparent', color: T.ink, border: `1px solid ${T.gray1}`, cursor: 'pointer',
+              fontFamily: T.mono, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              View Archive <span style={{ opacity: 0.4 }}>→</span>
+            </button>
+          </div>
+        </div>
+
+        {/* System flow */}
+        <div style={{ borderTop: `1px solid ${T.gray1}`, paddingTop: 24, marginTop: 40 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.gray3, marginBottom: 14 }}>
+            System Flow
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap', rowGap: 8 }}>
+            {['Real Desk', 'Photo Input', 'Point Cloud Map', 'Attention Log', 'Searchable Database'].map((step, i, arr) => (
+              <React.Fragment key={step}>
+                <span style={{
+                  padding: '5px 10px', border: `1px solid ${T.gray1}`,
+                  fontFamily: T.mono, fontSize: 9, letterSpacing: '0.08em', color: T.gray3,
+                }}>{step}</span>
+                {i < arr.length - 1 && (
+                  <span style={{ fontFamily: T.mono, fontSize: 10, color: T.gray2, padding: '0 4px' }}>→</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+          <p style={{ fontFamily: T.sans, fontSize: 11, color: T.gray3, lineHeight: 1.6, marginTop: 16, fontWeight: 300 }}>
+            Use <em>New Entry</em> to log a desk state. Records are stored locally in your browser. <em>Recall Mode</em> retrieves past configurations closest to a target attention level.
+          </p>
+        </div>
+      </div>
+
+      {/* Right: point cloud */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.paper2, overflow: 'hidden' }}>
+        <GridBg cols={20}/>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <PointCloud width={540} height={580} density={200}/>
+          {/* Crosshair */}
+          <svg style={{ position: 'absolute', inset: 0 }} width={540} height={580}>
+            <line x1={270} y1={0} x2={270} y2={580} stroke="rgba(12,12,12,0.08)" strokeWidth="0.5" strokeDasharray="4,8"/>
+            <line x1={0} y1={290} x2={540} y2={290} stroke="rgba(12,12,12,0.08)" strokeWidth="0.5" strokeDasharray="4,8"/>
+            <circle cx={270} cy={290} r={6} fill="none" stroke="rgba(12,12,12,0.3)" strokeWidth="1"/>
+            <circle cx={270} cy={290} r={2} fill="rgba(12,12,12,0.4)"/>
+          </svg>
+        </div>
+        {/* Corner labels */}
+        <div style={{ position: 'absolute', bottom: 16, right: 20, fontFamily: T.mono, fontSize: 8, letterSpacing: '0.12em', color: T.gray3, textTransform: 'uppercase' }}>
+          Point Cloud — Session #041
+        </div>
+        <div style={{ position: 'absolute', top: 16, left: 20, fontFamily: T.mono, fontSize: 8, letterSpacing: '0.12em', color: T.gray3 }}>
+          X / Y / Z
+        </div>
+        {/* Axis ticks */}
+        <div style={{ position: 'absolute', bottom: 16, left: 20, display: 'flex', gap: 12 }}>
+          {['Density','Focus','Time'].map(a => (
+            <span key={a} style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: '0.1em', color: T.gray3, textTransform: 'uppercase' }}>{a}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <SiteFooter/>
+  </div>
+);
+
+/* ────────────────────────────────────
+   PAGE 2: NEW ENTRY
+──────────────────────────────────── */
+const NewEntryPage = () => {
+  const steps = ['01 Capture','02 Spatial Process','03 Attention Log','04 Save'];
+  return (
+    <div style={{ width: 1280, minHeight: 800, background: T.paper, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <GridBg/>
+      <SiteNav active="new-entry"/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+
+        {/* Step bar */}
+        <div style={{ padding: '16px 48px', borderBottom: `1px solid ${T.gray1}`, display: 'flex', alignItems: 'center', gap: 0, background: T.paper }}>
+          {steps.map((s, i) => (
+            <React.Fragment key={s}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px 6px 0' }}>
+                <div style={{
+                  width: 20, height: 20, border: `1px solid ${i === 0 ? T.ink : T.gray1}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: i === 0 ? T.ink : 'transparent', flexShrink: 0,
+                }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 8, color: i === 0 ? T.paper : T.gray3 }}>{i+1}</span>
+                </div>
+                <span style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: i === 0 ? T.ink : T.gray2 }}>{s}</span>
+              </div>
+              {i < steps.length - 1 && (
+                <div style={{ width: 32, height: 1, background: i === 0 ? T.ink : T.gray1, marginRight: 16 }}/>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Main content */}
+        <div style={{ display: 'grid', gridTemplateColumns: '480px 1fr', flex: 1 }}>
+          {/* Left: camera/upload */}
+          <div style={{ borderRight: `1px solid ${T.gray1}`, padding: '36px 40px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.gray3, marginBottom: 6 }}>Step 01 — Capture</div>
+              <p style={{ fontFamily: T.sans, fontSize: 12, color: T.gray3, lineHeight: 1.6, fontWeight: 300 }}>Frame your desk from the same angle each time for consistent spatial records.</p>
+            </div>
+
+            {/* Viewfinder */}
+            <div style={{ border: `1px solid ${T.gray1}`, position: 'relative' }}>
+              <div style={{ height: 280, background: T.paper2, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                <GridBg cols={20}/>
+                {/* Grid overlay */}
+                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+                  <line x1="33%" y1="0" x2="33%" y2="100%" stroke="rgba(12,12,12,0.1)" strokeWidth="0.5"/>
+                  <line x1="66%" y1="0" x2="66%" y2="100%" stroke="rgba(12,12,12,0.1)" strokeWidth="0.5"/>
+                  <line x1="0" y1="33%" x2="100%" y2="33%" stroke="rgba(12,12,12,0.1)" strokeWidth="0.5"/>
+                  <line x1="0" y1="66%" x2="100%" y2="66%" stroke="rgba(12,12,12,0.1)" strokeWidth="0.5"/>
+                  <path d="M16,16 L16,36 M16,16 L36,16" stroke="rgba(12,12,12,0.4)" strokeWidth="1.5" fill="none"/>
+                  <path d="M384,16 L384,36 M384,16 L364,16" stroke="rgba(12,12,12,0.4)" strokeWidth="1.5" fill="none"/>
+                  <path d="M16,264 L16,244 M16,264 L36,264" stroke="rgba(12,12,12,0.4)" strokeWidth="1.5" fill="none"/>
+                  <path d="M384,264 L384,244 M384,264 L364,264" stroke="rgba(12,12,12,0.4)" strokeWidth="1.5" fill="none"/>
+                </svg>
+                <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                  <svg width="44" height="38" viewBox="0 0 44 38" fill="none" style={{ opacity: 0.3, display: 'block', margin: '0 auto 10px' }}>
+                    <rect x="1" y="9" width="42" height="28" rx="2" stroke={T.ink} strokeWidth="1.5"/>
+                    <path d="M15 9 L17 2 L27 2 L29 9" stroke={T.ink} strokeWidth="1.5"/>
+                    <circle cx="22" cy="23" r="8" stroke={T.ink} strokeWidth="1.5"/>
+                    <circle cx="22" cy="23" r="3.5" stroke={T.ink} strokeWidth="1"/>
+                    <circle cx="35" cy="14" r="2" fill={T.ink} opacity="0.5"/>
+                  </svg>
+                  <span style={{ fontFamily: T.mono, fontSize: 9, color: T.gray3, letterSpacing: '0.12em' }}>CAMERA INACTIVE</span>
+                </div>
+              </div>
+              <div style={{ padding: '7px 12px', borderTop: `1px solid ${T.gray1}`, display: 'flex', justifyContent: 'space-between', background: 'rgba(12,12,12,0.02)' }}>
+                <span style={{ fontFamily: T.mono, fontSize: 8, color: T.gray3, letterSpacing: '0.1em' }}>ALIGN WITH PREVIOUS RECORD</span>
+                <span style={{ fontFamily: T.mono, fontSize: 8, color: T.gray3 }}>↕ LEVEL</span>
+              </div>
+            </div>
+
+            {/* Or / upload */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ flex: 1, height: 1, background: T.gray1 }}/>
+              <span style={{ fontFamily: T.mono, fontSize: 8, color: T.gray3, letterSpacing: '0.15em' }}>OR</span>
+              <div style={{ flex: 1, height: 1, background: T.gray1 }}/>
+            </div>
+            <button style={{
+              padding: '13px 20px', background: 'transparent', color: T.ink, border: `1px solid ${T.gray1}`,
+              fontFamily: T.mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer',
+              display: 'flex', justifyContent: 'space-between',
+            }}>
+              <span>Upload Photo from Library</span><span style={{ opacity: 0.4 }}>↑</span>
+            </button>
+
+            {/* Ref card */}
+            <div style={{ border: `1px solid ${T.gray1}`, padding: '10px 12px', display: 'flex', gap: 12, alignItems: 'center', background: T.paper2 }}>
+              <div style={{ width: 48, height: 48, border: `1px solid ${T.gray1}`, flexShrink: 0, overflow: 'hidden' }}>
+                <DeskThumb w={48} h={48}/>
+              </div>
+              <div>
+                <div style={{ fontFamily: T.mono, fontSize: 8, color: T.gray3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3 }}>Last capture</div>
+                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.ink }}>Mar 12, 2025 — 9:14am</div>
+              </div>
+            </div>
+
+            <button style={{
+              padding: '14px 20px', background: T.ink, color: T.paper, border: 'none', cursor: 'pointer',
+              fontFamily: T.mono, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
+              marginTop: 'auto', display: 'flex', justifyContent: 'space-between',
+            }}>
+              <span>Take Desk Photo</span><span style={{ fontSize: 16, opacity: 0.5 }}>◉</span>
+            </button>
+          </div>
+
+          {/* Right: preview / instructions */}
+          <div style={{ padding: '36px 40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.gray3, marginBottom: 10 }}>What happens next</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {[
+                  { n: '02', title: 'Spatial Processing', desc: 'Your photo is translated into a point cloud — a spatial record of object positions on your desk.' },
+                  { n: '03', title: 'Attention Log', desc: 'You rate your focus level, mood, and lighting. Add field notes about this session.' },
+                  { n: '04', title: 'Save to Archive', desc: 'The record is saved locally. Retrieve matching configurations anytime with Recall Mode.' },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 16, padding: '18px 0', borderBottom: `1px solid ${T.gray1}` }}>
+                    <div style={{ fontFamily: T.mono, fontSize: 10, color: T.gray2, letterSpacing: '0.1em', minWidth: 28 }}>{item.n}</div>
+                    <div>
+                      <div style={{ fontFamily: T.mono, fontSize: 11, color: T.ink, marginBottom: 4 }}>{item.title}</div>
+                      <div style={{ fontFamily: T.sans, fontSize: 12, color: T.gray3, lineHeight: 1.6, fontWeight: 300 }}>{item.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Orientation diagram */}
+            <div style={{ border: `1px solid ${T.gray1}`, padding: '16px', background: T.paper2 }}>
+              <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: '0.18em', textTransform: 'uppercase', color: T.gray3, marginBottom: 10 }}>Capture Guidance</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {['Bird\'s-eye view preferred','Even lighting, avoid glare','Include full desk surface','Consistent framing each time'].map(t => (
+                  <div key={t} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <div style={{ width: 4, height: 4, background: T.ink, marginTop: 5, flexShrink: 0 }}/>
+                    <span style={{ fontFamily: T.sans, fontSize: 11, color: T.gray3, lineHeight: 1.5, fontWeight: 300 }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <SiteFooter/>
+    </div>
+  );
+};
+
+/* ────────────────────────────────────
+   PAGE 3: ARCHIVE
+──────────────────────────────────── */
+const ArchivePage = () => {
+  const records = [
+    { id:'041', date:'Apr 12, 2025', time:'9:41am', focus:72, mood:'Calm', light:'Soft', objects:5 },
+    { id:'040', date:'Apr 11, 2025', time:'8:15am', focus:88, mood:'Focused', light:'Bright', objects:5 },
+    { id:'039', date:'Apr 9, 2025', time:'2:02pm', focus:45, mood:'Restless', light:'Artificial', objects:4 },
+    { id:'038', date:'Apr 7, 2025', time:'10:30am', focus:61, mood:'Alert', light:'Soft', objects:6 },
+    { id:'037', date:'Apr 5, 2025', time:'7:55am', focus:79, mood:'Calm', light:'Bright', objects:5 },
+    { id:'036', date:'Apr 3, 2025', time:'11:20am', focus:55, mood:'Tired', light:'Dim', objects:3 },
+  ];
+  return (
+    <div style={{ width: 1280, minHeight: 800, background: T.paper, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <GridBg/>
+      <SiteNav active="archive"/>
+
+      <div style={{ flex: 1, position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Archive header */}
+        <div style={{ padding: '24px 48px', borderBottom: `1px solid ${T.gray1}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.gray3, marginBottom: 6 }}>Portable Attention Box</div>
+            <h2 style={{ fontFamily: T.mono, fontSize: 28, fontWeight: 500, letterSpacing: '-0.01em', color: T.ink }}>Attention Archive</h2>
+          </div>
+          <div style={{ display: 'flex', gap: 24, alignItems: 'flex-end' }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: T.mono, fontSize: 36, fontWeight: 500, lineHeight: 1, color: T.ink }}>41</div>
+              <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.gray3, marginTop: 2 }}>records</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: T.mono, fontSize: 36, fontWeight: 500, lineHeight: 1, color: T.ink }}>68</div>
+              <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.gray3, marginTop: 2 }}>avg focus</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter bar */}
+        <div style={{ padding: '10px 48px', borderBottom: `1px solid ${T.gray1}`, display: 'flex', gap: 6, background: T.paper }}>
+          {['All','High Focus (80+)','Low Focus (<60)','This Week','Calm','Focused'].map((f,i) => (
+            <button key={f} style={{
+              padding: '5px 12px', border: `1px solid ${i===0 ? T.ink : T.gray1}`,
+              background: i===0 ? T.ink : 'transparent',
+              color: i===0 ? T.paper : T.gray3, cursor: 'pointer',
+              fontFamily: T.mono, fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase',
+            }}>{f}</button>
+          ))}
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+            <button style={{ padding: '5px 12px', border: `1px solid ${T.gray1}`, background: 'transparent', color: T.gray3, cursor: 'pointer', fontFamily: T.mono, fontSize: 8, letterSpacing: '0.1em' }}>↕ SORT</button>
+          </div>
+        </div>
+
+        {/* Column headers */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '80px 80px 1fr 100px 100px 100px 80px 120px',
+          padding: '8px 48px', borderBottom: `1px solid ${T.gray1}`,
+          gap: 0, background: T.paper,
+        }}>
+          {['Photo','Cloud','Record ID','Date','Focus','Mood','Light',''].map(h => (
+            <div key={h} style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: T.gray3 }}>{h}</div>
+          ))}
+        </div>
+
+        {/* Records */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {records.map((r, i) => (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '80px 80px 1fr 100px 100px 100px 80px 120px',
+              padding: '0 48px', borderBottom: `1px solid ${T.gray1}`, alignItems: 'center',
+              background: i % 2 === 0 ? T.paper : 'rgba(12,12,12,0.015)',
+              minHeight: 72, gap: 0,
+            }}>
+              <div style={{ padding: '8px 0' }}>
+                <div style={{ width: 60, height: 52, border: `1px solid ${T.gray1}`, overflow: 'hidden' }}>
+                  <DeskThumb w={60} h={52}/>
+                </div>
+              </div>
+              <div>
+                <div style={{ width: 60, height: 52, border: `1px solid ${T.gray1}`, background: T.paper2, overflow: 'hidden' }}>
+                  <PointCloud width={60} height={52} density={28}/>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontFamily: T.mono, fontSize: 10, color: T.gray2, marginBottom: 2 }}>PAB-2025-0{r.id}</div>
+                <div style={{ fontFamily: T.mono, fontSize: 8, color: T.gray3 }}>{r.objects} objects detected</div>
+              </div>
+              <div style={{ fontFamily: T.mono, fontSize: 10, color: T.ink, lineHeight: 1.5 }}>
+                {r.date}<br/><span style={{ color: T.gray3 }}>{r.time}</span>
+              </div>
+              <div>
+                <div style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 500, color: T.ink, marginBottom: 3 }}>{r.focus}%</div>
+                <div style={{ height: 2, background: T.gray1, position: 'relative', width: 60 }}>
+                  <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${r.focus}%`, background: T.ink }}/>
+                </div>
+              </div>
+              <div style={{ fontFamily: T.mono, fontSize: 10, color: T.gray3 }}>{r.mood}</div>
+              <div style={{ fontFamily: T.mono, fontSize: 10, color: T.gray3 }}>{r.light}</div>
+              <div>
+                <button style={{
+                  padding: '5px 10px', border: `1px solid ${T.gray1}`, background: 'transparent',
+                  fontFamily: T.mono, fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase',
+                  color: T.gray3, cursor: 'pointer',
+                }}>View →</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <SiteFooter/>
+    </div>
+  );
+};
+
+/* ────────────────────────────────────
+   PAGE 4: RECALL MODE
+──────────────────────────────────── */
+const RecallPage = () => {
+  const results = [
+    { id:'040', date:'Apr 11', focus:88, mood:'Focused', light:'Bright', match:97 },
+    { id:'038', date:'Apr 7', focus:82, mood:'Alert', light:'Soft', match:91 },
+    { id:'035', date:'Mar 30', focus:79, mood:'Calm', light:'Bright', match:84 },
+    { id:'029', date:'Mar 18', focus:85, mood:'Focused', light:'Bright', match:78 },
+  ];
+  return (
+    <div style={{ width: 1280, minHeight: 800, background: T.paper, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <GridBg/>
+      <SiteNav active="recall-mode"/>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '380px 1fr', position: 'relative', zIndex: 1 }}>
+
+        {/* Left: query panel */}
+        <div style={{ borderRight: `1px solid ${T.gray1}`, padding: '36px 36px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.gray3, marginBottom: 6 }}>Attention Retrieval</div>
+            <p style={{ fontFamily: T.sans, fontSize: 12, color: T.gray3, lineHeight: 1.6, fontWeight: 300 }}>
+              Find past desk configurations closest to your desired attention state.
+            </p>
+          </div>
+
+          {/* Focus input */}
+          <div style={{ border: `1px solid ${T.ink}`, padding: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+              <span style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.gray3 }}>Desired Focus Level</span>
+              <span style={{ fontFamily: T.mono, fontSize: 28, fontWeight: 500, color: T.ink }}>85<span style={{ fontSize: 13, color: T.gray3 }}>%</span></span>
+            </div>
+            <div style={{ height: 2, background: T.gray1, position: 'relative', marginBottom: 4 }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: '85%', background: T.ink }}/>
+              <div style={{ position: 'absolute', left: '85%', top: -4, width: 10, height: 10, background: T.ink, borderRadius: '50%', transform: 'translateX(-50%)' }}/>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: T.mono, fontSize: 8, color: T.gray3 }}>
+              <span>0 — Scattered</span><span>50</span><span>100 — Deep</span>
+            </div>
+          </div>
+
+          {/* Mood */}
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.gray3, marginBottom: 8 }}>Mood Preference</div>
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+              {['Any','Calm','Focused','Alert','Energized'].map((m,i) => (
+                <button key={m} style={{
+                  padding: '5px 10px', border: `1px solid ${i===2 ? T.ink : T.gray1}`,
+                  background: i===2 ? T.ink : 'transparent',
+                  color: i===2 ? T.paper : T.gray3, cursor: 'pointer',
+                  fontFamily: T.mono, fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase',
+                }}>{m}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Lighting */}
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.gray3, marginBottom: 8 }}>Lighting Condition</div>
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+              {['Any','Bright','Soft','Dim'].map((l,i) => (
+                <button key={l} style={{
+                  padding: '5px 10px', border: `1px solid ${i===1 ? T.ink : T.gray1}`,
+                  background: i===1 ? T.ink : 'transparent',
+                  color: i===1 ? T.paper : T.gray3, cursor: 'pointer',
+                  fontFamily: T.mono, fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase',
+                }}>{l}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ height: 1, background: T.gray1 }}/>
+
+          {/* Time range */}
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.gray3, marginBottom: 8 }}>Date Range</div>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {['All Time','Last Month','Last Week'].map((d,i) => (
+                <button key={d} style={{
+                  padding: '5px 10px', border: `1px solid ${i===0 ? T.ink : T.gray1}`,
+                  background: i===0 ? T.ink : 'transparent',
+                  color: i===0 ? T.paper : T.gray3, cursor: 'pointer',
+                  fontFamily: T.mono, fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase',
+                }}>{d}</button>
+              ))}
+            </div>
+          </div>
+
+          <button style={{
+            padding: '14px 20px', background: T.ink, color: T.paper, border: 'none', cursor: 'pointer',
+            fontFamily: T.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase',
+            display: 'flex', justifyContent: 'space-between', marginTop: 'auto',
+          }}>
+            <span>Find Matching Configurations</span>
+            <span style={{ opacity: 0.5 }}>⌕</span>
+          </button>
+        </div>
+
+        {/* Right: results */}
+        <div style={{ padding: '36px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.gray3, marginBottom: 4 }}>Matched Records</div>
+              <span style={{ fontFamily: T.mono, fontSize: 22, fontWeight: 500, color: T.ink }}>4 </span>
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.gray3 }}>results</span>
+            </div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.gray3, letterSpacing: '0.1em' }}>Sorted by match score</div>
+          </div>
+
+          {/* Result cards */}
+          {results.map((r, i) => (
+            <div key={i} style={{ border: `1px solid ${i===0 ? T.ink : T.gray1}`, padding: '16px', background: i===0 ? 'rgba(12,12,12,0.02)' : T.paper, display: 'grid', gridTemplateColumns: '72px 72px 1fr auto', gap: 14, alignItems: 'center' }}>
+              <div style={{ width: 72, height: 60, border: `1px solid ${T.gray1}`, overflow: 'hidden' }}>
+                <DeskThumb w={72} h={60}/>
+              </div>
+              <div style={{ width: 72, height: 60, border: `1px solid ${T.gray1}`, background: T.paper2, overflow: 'hidden' }}>
+                <PointCloud width={72} height={60} density={32}/>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 500, color: T.ink }}>{r.date} — {r.focus}% focus</span>
+                  {i===0 && <span style={{ padding: '2px 6px', border: `1px solid ${T.ink}`, fontFamily: T.mono, fontSize: 7, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.ink }}>Best match</span>}
+                </div>
+                <div style={{ fontFamily: T.mono, fontSize: 9, color: T.gray3, letterSpacing: '0.06em', marginBottom: 8 }}>{r.mood} · {r.light}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ flex: 1, height: 2, background: T.gray1, position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${r.match}%`, background: T.ink }}/>
+                  </div>
+                  <span style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: '0.08em', color: T.ink, whiteSpace: 'nowrap' }}>{r.match}% match</span>
+                </div>
+              </div>
+              <button style={{
+                padding: '8px 14px', border: `1px solid ${i===0 ? T.ink : T.gray1}`, background: i===0 ? T.ink : 'transparent',
+                color: i===0 ? T.paper : T.gray3, cursor: 'pointer', fontFamily: T.mono, fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap',
+              }}>Recreate →</button>
+            </div>
+          ))}
+        </div>
+      </div>
+      <SiteFooter/>
+    </div>
+  );
+};
+
+/* ── BROWSER CHROME WRAPPER ── */
+const BrowserChrome = ({ url, children }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid #333', borderRadius: 8, overflow: 'hidden', background: '#1c1c1e' }}>
+    {/* Title bar */}
+    <div style={{ height: 40, background: '#2c2c2e', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10, flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {['#ff5f57','#febc2e','#28c840'].map(c => (
+          <div key={c} style={{ width: 11, height: 11, borderRadius: '50%', background: c }}/>
+        ))}
+      </div>
+      {/* URL bar */}
+      <div style={{
+        flex: 1, maxWidth: 400, height: 24, background: '#3a3a3c', borderRadius: 4,
+        display: 'flex', alignItems: 'center', padding: '0 10px', gap: 6,
+      }}>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M5 1a4 4 0 100 8A4 4 0 005 1zM1 5h8M5 1C3.5 3 3 4 3 5s.5 2 2 4M5 1c1.5 2 2 3 2 4s-.5 2-2 4" stroke="#9a9a9a" strokeWidth="0.8"/>
+        </svg>
+        <span style={{ fontFamily: 'system-ui', fontSize: 10, color: '#9a9a9a', letterSpacing: '0.01em' }}>{url}</span>
+      </div>
+    </div>
+    {/* Page */}
+    <div style={{ overflow: 'hidden' }}>{children}</div>
+  </div>
+);
+
+/* ── APP ── */
+const App = () => (
+  <DesignCanvas title="Portable Attention Box — Website Redesign">
+    <DCSection id="pages" title="Website Pages">
+      <DCArtboard id="home" label="01 Home" width={1280} height={858}>
+        <BrowserChrome url="saraaaalin.github.io/2026_Metatool/#home">
+          <HomePage/>
+        </BrowserChrome>
+      </DCArtboard>
+      <DCArtboard id="new-entry" label="02 New Entry" width={1280} height={858}>
+        <BrowserChrome url="saraaaalin.github.io/2026_Metatool/#new-entry">
+          <NewEntryPage/>
+        </BrowserChrome>
+      </DCArtboard>
+      <DCArtboard id="archive" label="03 Archive" width={1280} height={858}>
+        <BrowserChrome url="saraaaalin.github.io/2026_Metatool/#archive">
+          <ArchivePage/>
+        </BrowserChrome>
+      </DCArtboard>
+      <DCArtboard id="recall" label="04 Recall Mode" width={1280} height={858}>
+        <BrowserChrome url="saraaaalin.github.io/2026_Metatool/#recall">
+          <RecallPage/>
+        </BrowserChrome>
+      </DCArtboard>
+    </DCSection>
+  </DesignCanvas>
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+<div id="root"></div>
+</body>
+</html>

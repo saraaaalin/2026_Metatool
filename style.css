@@ -301,3 +301,179 @@ textarea { min-height: 72px; resize: vertical; }
   body { background: var(--paper); display: block; }
   .app-shell { width: 100%; min-height: 100dvh; height: auto; }
 }
+
+/* Desktop interface (Metatool Website style) for large screens */
+@media (min-width: 900px) {
+  body:not(.force-mobile) {
+    background: #111;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+  }
+
+  body:not(.force-mobile) .app-shell {
+    width: min(1280px, 96vw);
+    height: min(860px, 94vh);
+    border: 1px solid #2f2f2f;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body:not(.force-mobile) .status-bar {
+    display: none;
+  }
+
+  body:not(.force-mobile) .site-header {
+    border-top: none;
+  }
+
+  body:not(.force-mobile) .header-inner {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 24px;
+    padding: 0 48px;
+    min-height: 56px;
+  }
+
+  body:not(.force-mobile) .site-nav {
+    justify-content: flex-end;
+    gap: 0;
+  }
+
+  body:not(.force-mobile) .site-nav a,
+  body:not(.force-mobile) .site-nav .btn {
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 18px 14px;
+    font-size: 10px;
+  }
+
+  body:not(.force-mobile) .site-nav a.is-active {
+    border-bottom-color: var(--ink);
+  }
+
+  body:not(.force-mobile) .main {
+    padding: 0;
+    overflow-y: auto;
+  }
+
+  body:not(.force-mobile) .page-inner {
+    padding: 28px 48px;
+  }
+
+  body:not(.force-mobile) .page-title {
+    font-size: 34px;
+    margin-bottom: 14px;
+  }
+
+  body:not(.force-mobile) .lead,
+  body:not(.force-mobile) .section-intro,
+  body:not(.force-mobile) .meta-note {
+    font-size: 13px;
+    line-height: 1.75;
+  }
+
+  body:not(.force-mobile) #page-home .page-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  body:not(.force-mobile) #page-home .page-title,
+  body:not(.force-mobile) #page-home .lead,
+  body:not(.force-mobile) #page-home .meta-note {
+    grid-column: 1;
+  }
+
+  body:not(.force-mobile) #page-home .diagram-block {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    margin: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  body:not(.force-mobile) .new-entry-layout {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  body:not(.force-mobile) .form-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  body:not(.force-mobile) .field--full {
+    grid-column: 1 / -1;
+  }
+
+  body:not(.force-mobile) .camera-viewfinder,
+  body:not(.force-mobile) .camera-video {
+    min-height: 280px;
+    height: 280px;
+  }
+
+  body:not(.force-mobile) .record-preview {
+    border-top: none;
+    border-left: 1px solid var(--gray1);
+    padding: 0 0 0 20px;
+  }
+
+  body:not(.force-mobile) .archive-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  body:not(.force-mobile) .record-card {
+    grid-template-columns: 74px 74px 1fr;
+    gap: 12px;
+  }
+
+  body:not(.force-mobile) .record-card__thumb {
+    width: 74px;
+    height: 74px;
+  }
+
+  body:not(.force-mobile) .desktop-only {
+    display: flex;
+  }
+
+  body:not(.force-mobile) .recall-layout {
+    grid-template-columns: minmax(300px, 420px) 1fr;
+    align-items: start;
+  }
+
+  body:not(.force-mobile) .recall-panel {
+    display: block;
+    border: 1px solid var(--gray1);
+    padding: 14px;
+    background: var(--paper2);
+  }
+}
+
+/* Manual view-mode overrides (used by the Mobile/Desktop toggle button) */
+body.force-desktop {
+  background: #111;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+body.force-desktop .app-shell {
+  width: min(1280px, 96vw);
+  height: min(860px, 94vh);
+  border: 1px solid #2f2f2f;
+}
+
+body.force-desktop .status-bar {
+  display: none;
+}
+
+body.force-mobile {
+  background: #111;
+  display: grid;
+  place-items: center;
+}
