@@ -12,7 +12,9 @@
   "use strict";
 
   const STORAGE_KEY = "portableAttentionBox_records_v1";
-  const VIEW_MODE_KEY = "portableAttentionBox_viewMode_v1";
+  /** v2: default is CSS-driven (auto). v1 could leave users stuck in "mobile" on desktop. */
+  const VIEW_MODE_KEY = "portableAttentionBox_viewMode_v2";
+  const DESKTOP_MIN_WIDTH = 900;
   let currentPhotoDataUrl = "";
   let currentCloudSeed = "";
   let cameraStream = null;
@@ -431,27 +433,63 @@
     const toggleButton = document.getElementById("btn-view-toggle");
     if (!toggleButton) return;
 
-    function applyMode(mode) {
+    function isWideViewport() {
+      return window.matchMedia("(min-width: " + DESKTOP_MIN_WIDTH + "px)").matches;
+    }
+
+    function readStoredMode() {
+      const raw = localStorage.getItem(VIEW_MODE_KEY);
+      if (raw === "mobile" || raw === "desktop") return raw;
+      return "auto";
+    }
+
+    function applyStoredMode() {
+      const mode = readStoredMode();
       document.body.classList.remove("force-mobile", "force-desktop");
       if (mode === "mobile") {
         document.body.classList.add("force-mobile");
       } else if (mode === "desktop") {
         document.body.classList.add("force-desktop");
       }
-      toggleButton.textContent = mode === "mobile" ? "Desktop View" : "Mobile View";
+      syncToggleLabel();
     }
 
-    let mode = localStorage.getItem(VIEW_MODE_KEY) || "auto";
-    if (mode === "auto") {
-      mode = window.innerWidth >= 900 ? "desktop" : "mobile";
+    function syncToggleLabel() {
+      const mode = readStoredMode();
+      const wide = isWideViewport();
+      if (mode === "auto") {
+        toggleButton.textContent = wide ? "Mobile View" : "Desktop View";
+      } else if (mode === "mobile") {
+        toggleButton.textContent = "Desktop View";
+      } else {
+        toggleButton.textContent = "Mobile View";
+      }
     }
-    applyMode(mode);
+
+    applyStoredMode();
 
     toggleButton.addEventListener("click", function () {
-      const isDesktop = document.body.classList.contains("force-desktop");
-      const nextMode = isDesktop ? "mobile" : "desktop";
-      localStorage.setItem(VIEW_MODE_KEY, nextMode);
-      applyMode(nextMode);
+      const mode = readStoredMode();
+      const wide = isWideViewport();
+
+      if (wide) {
+        if (mode === "mobile") {
+          localStorage.setItem(VIEW_MODE_KEY, "auto");
+        } else {
+          localStorage.setItem(VIEW_MODE_KEY, "mobile");
+        }
+      } else {
+        if (mode === "desktop") {
+          localStorage.setItem(VIEW_MODE_KEY, "auto");
+        } else {
+          localStorage.setItem(VIEW_MODE_KEY, "desktop");
+        }
+      }
+      applyStoredMode();
+    });
+
+    window.addEventListener("resize", function () {
+      syncToggleLabel();
     });
   }
 
