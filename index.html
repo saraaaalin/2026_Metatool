@@ -9,7 +9,7 @@
   <title>Portable Attention Box — Attention Database</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500&display=swap" rel="stylesheet" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
@@ -33,13 +33,21 @@
     <!-- Site chrome: title + primary navigation -->
     <header class="site-header">
       <div class="header-inner">
-        <a href="#home" class="site-title" data-nav="home">Portable Attention Box</a>
+        <a href="#home" class="site-brand" data-nav="home">
+          <svg class="site-logo" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="15" height="15" stroke="currentColor" stroke-width="1" />
+            <line x1="8" y1="0" x2="8" y2="16" stroke="currentColor" stroke-width="0.5" />
+            <line x1="0" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="0.5" />
+            <circle cx="8" cy="8" r="2" fill="currentColor" />
+          </svg>
+          <span class="site-brand-text">Portable Attention Box</span>
+        </a>
         <nav class="site-nav" aria-label="Main">
           <a href="#home" data-nav="home">Home</a>
           <a href="#new" data-nav="new">New Entry</a>
           <a href="#archive" data-nav="archive">Archive</a>
           <a href="#recall" data-nav="recall">Recall Mode</a>
-          <button type="button" id="btn-view-toggle" class="btn btn--small">Desktop View</button>
+          <button type="button" id="btn-view-toggle" class="btn btn--small nav-view-toggle">Mobile View</button>
         </nav>
       </div>
     </header>
@@ -47,36 +55,71 @@
     <main class="main">
     <!-- Section 1: Project introduction + system diagram -->
     <section id="page-home" class="page page--active" aria-labelledby="home-heading">
-      <div class="page-inner">
-        <h1 id="home-heading" class="page-title">Portable Attention Box</h1>
-        <p class="lead">
-          This project investigates how <strong>desk arrangements</strong>, <strong>lighting conditions</strong>,
-          and <strong>emotional states</strong> relate to measurable attention and focus. Each session is
-          documented as a spatial record—linking what is on the desk to how it felt to work there.
-        </p>
-
-        <div class="diagram-block halftone-zone">
-          <h2 class="section-label">System flow</h2>
-          <div class="system-diagram" role="img" aria-label="Real desk to database flow">
-            <div class="diagram-row">
-              <div class="diagram-node">Real Desk</div>
-              <span class="diagram-arrow" aria-hidden="true">→</span>
-              <div class="diagram-node">Photo Input</div>
-              <span class="diagram-arrow" aria-hidden="true">→</span>
-              <div class="diagram-node diagram-node--wide">Object Arrangement Map / Point Cloud</div>
+      <div class="home-hero">
+        <div class="home-hero__left">
+          <p class="home-kicker">Research Instrument — Spatial Attention Systems</p>
+          <h1 id="home-heading" class="home-title">
+            Portable<br />
+            Attention<br />
+            Box
+          </h1>
+          <p class="lead home-lead">
+            This project investigates how <strong class="home-lead-strong">desk arrangements</strong>,
+            <strong class="home-lead-strong">lighting conditions</strong>, and
+            <strong class="home-lead-strong">emotional states</strong> relate to measurable attention and focus.
+            Each session is documented as a spatial record — linking what is on the desk to how it felt to work there.
+          </p>
+          <div class="home-cta">
+            <a href="#new" class="home-cta-btn home-cta-btn--primary" data-nav="new"
+              >New Entry <span class="home-cta-arrow" aria-hidden="true">→</span></a
+            >
+            <a href="#archive" class="home-cta-btn home-cta-btn--ghost" data-nav="archive"
+              >View Archive <span class="home-cta-arrow home-cta-arrow--muted" aria-hidden="true">→</span></a
+            >
+          </div>
+          <div class="home-flow">
+            <div class="home-flow__label">System Flow</div>
+            <div class="home-flow__steps" role="img" aria-label="System flow from desk to database">
+              <span class="home-flow__step">Real Desk</span>
+              <span class="home-flow__arrow" aria-hidden="true">→</span>
+              <span class="home-flow__step">Photo Input</span>
+              <span class="home-flow__arrow" aria-hidden="true">→</span>
+              <span class="home-flow__step">Point Cloud Map</span>
+              <span class="home-flow__arrow" aria-hidden="true">→</span>
+              <span class="home-flow__step">Attention Log</span>
+              <span class="home-flow__arrow" aria-hidden="true">→</span>
+              <span class="home-flow__step">Searchable Database</span>
             </div>
-            <div class="diagram-row">
-              <div class="diagram-node">Attention Log</div>
-              <span class="diagram-arrow" aria-hidden="true">→</span>
-              <div class="diagram-node diagram-node--wide">Searchable Attention Database</div>
-            </div>
+            <p class="meta-note home-flow__note">
+              Use <em>New Entry</em> to log a desk state. Records are stored locally in your browser.
+              <em>Recall Mode</em> retrieves past configurations closest to a target attention level.
+            </p>
           </div>
         </div>
-
-        <p class="meta-note">
-          Use <em>New Entry</em> to log a desk state. Records are stored locally in your browser.
-          <em>Recall Mode</em> retrieves past configurations closest to a target attention level.
-        </p>
+        <div class="home-hero__right">
+          <div class="home-hero__grid-fine" aria-hidden="true"></div>
+          <div class="home-hero__viz">
+            <canvas id="home-hero-cloud" width="540" height="580" aria-label="Point cloud visualization"></canvas>
+            <svg
+              class="home-hero__crosshair"
+              viewBox="0 0 540 580"
+              preserveAspectRatio="xMidYMid meet"
+              aria-hidden="true"
+            >
+              <line x1="270" y1="0" x2="270" y2="580" stroke="rgba(12,12,12,0.08)" stroke-width="0.5" stroke-dasharray="4,8" />
+              <line x1="0" y1="290" x2="540" y2="290" stroke="rgba(12,12,12,0.08)" stroke-width="0.5" stroke-dasharray="4,8" />
+              <circle cx="270" cy="290" r="6" fill="none" stroke="rgba(12,12,12,0.3)" stroke-width="1" />
+              <circle cx="270" cy="290" r="2" fill="rgba(12,12,12,0.4)" />
+            </svg>
+          </div>
+          <div class="home-hero__corner home-hero__corner--br">Point Cloud — Session #041</div>
+          <div class="home-hero__corner home-hero__corner--tl">X / Y / Z</div>
+          <div class="home-hero__axis-ticks">
+            <span>Density</span>
+            <span>Focus</span>
+            <span>Time</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -204,8 +247,11 @@
     </main>
 
     <footer class="site-footer">
-      <p>Portable Attention Box — personal attention database</p>
-      <button type="button" id="btn-install" class="btn btn--small hidden">Install App</button>
+      <p class="site-footer__tag">Portable Attention Box — personal attention database (local prototype)</p>
+      <div class="site-footer__right">
+        <span class="site-footer__version" aria-hidden="true">v0.4.1</span>
+        <button type="button" id="btn-install" class="btn btn--small hidden">Install App</button>
+      </div>
     </footer>
   </div>
 

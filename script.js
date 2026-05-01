@@ -114,6 +114,89 @@
     }
   }
 
+  /** Matches Metatool Website.html HomePage PointCloud (light background, fixed seed). */
+  function drawHomeHeroPointCloud(canvas) {
+    const w = canvas.width;
+    const h = canvas.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const rand = mulberry32(hashString("metatool-home-hero-pointcloud-v1") || 1);
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.strokeStyle = "rgba(12,12,12,0.05)";
+    ctx.lineWidth = 0.5;
+    for (let y = 0; y <= h; y += 20) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    for (let x = 0; x <= w; x += 20) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+
+    const pts = [];
+    const cx = w * 0.5;
+    const cy = h * 0.5;
+    let i;
+    for (i = 0; i < 200; i += 1) {
+      const a = rand() * Math.PI * 2;
+      const rad = Math.pow(rand(), 0.6) * Math.min(w, h) * 0.42;
+      pts.push({
+        x: cx + Math.cos(a) * rad * (0.6 + rand() * 0.8),
+        y: cy + Math.sin(a) * rad * 0.7,
+        s: 0.8 + rand() * 2.5,
+        o: 0.15 + rand() * 0.7,
+      });
+    }
+    [[0.25, 0.38], [0.55, 0.3], [0.74, 0.52], [0.38, 0.65], [0.62, 0.68]].forEach(function (pair) {
+      const fx = pair[0];
+      const fy = pair[1];
+      for (let j = 0; j < 14; j += 1) {
+        pts.push({
+          x: fx * w + (rand() - 0.5) * 36,
+          y: fy * h + (rand() - 0.5) * 28,
+          s: 1 + rand() * 3,
+          o: 0.3 + rand() * 0.65,
+        });
+      }
+    });
+
+    for (i = 0; i < Math.min(50, pts.length); i += 1) {
+      let j;
+      for (j = i + 1; j < Math.min(i + 3, pts.length); j += 1) {
+        const p = pts[i];
+        const q = pts[j];
+        const d = Math.hypot(q.x - p.x, q.y - p.y);
+        if (d < 60) {
+          ctx.strokeStyle = "rgba(12,12,12,0.09)";
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    pts.forEach(function (p) {
+      ctx.fillStyle = "rgba(12,12,12," + p.o + ")";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function refreshHomeHeroCloud() {
+    const canvas = document.getElementById("home-hero-cloud");
+    if (!canvas) return;
+    drawHomeHeroPointCloud(canvas);
+  }
+
   function getPageFromHash() {
     const page = (window.location.hash || "#home").slice(1).toLowerCase();
     if (["home", "new", "archive", "recall"].includes(page)) return page;
@@ -128,6 +211,9 @@
       a.classList.toggle("is-active", a.getAttribute("data-nav") === id);
     });
 
+    if (id === "home") {
+      requestAnimationFrame(refreshHomeHeroCloud);
+    }
     if (id === "archive") renderArchive();
   }
 
