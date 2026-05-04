@@ -952,6 +952,37 @@ label.mobile-upload-label {
   overflow: hidden;
 }
 
+.desk-viewfinder__grid {
+  z-index: 0;
+  pointer-events: none;
+}
+
+.desk-viewfinder__overlay-svg {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.desk-viewfinder__video,
+.desk-viewfinder__still {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+}
+
+.desk-camera-placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .desk-viewfinder__strip {
   padding: 7px 12px;
   border-top: 1px solid var(--gray1);
@@ -998,6 +1029,31 @@ label.mobile-upload-label {
   display: flex;
   justify-content: space-between;
   width: 100%;
+}
+
+label.desk-upload-label {
+  position: relative;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.desk-upload-label__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+  z-index: 2;
+}
+
+.desk-upload-label__face {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .desk-ref-card {

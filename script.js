@@ -49,6 +49,8 @@
     },
   ];
 
+  var deskCameraStream = null;
+
   var state = {
     mobileStack: [],
     uploadedImage: null,
@@ -828,6 +830,144 @@
     return h12 + ":" + pad2(m) + (am ? "am" : "pm");
   }
 
+  function stopDeskCameraTracks() {
+    if (deskCameraStream) {
+      deskCameraStream.getTracks().forEach(function (t) {
+        t.stop();
+      });
+      deskCameraStream = null;
+    }
+    var v = document.getElementById("desk-camera-video");
+    if (v) {
+      v.srcObject = null;
+      v.classList.add("hidden");
+    }
+  }
+
+  function refreshDeskCameraStatus() {
+    var v = document.getElementById("desk-camera-video");
+    var still = document.getElementById("desk-viewfinder-still");
+    var el = document.getElementById("desk-camera-status");
+    if (!el) return;
+    var live = v && !v.classList.contains("hidden") && v.srcObject;
+    var hasStill = still && !still.classList.contains("hidden") && still.getAttribute("src");
+    if (live) {
+      el.textContent = "LIVE PREVIEW";
+    } else if (hasStill) {
+      el.textContent = "PHOTO READY";
+    } else {
+      el.textContent = "CAMERA INACTIVE";
+    }
+  }
+
+  function syncDeskViewfinderLayers() {
+    var v = document.getElementById("desk-camera-video");
+    var still = document.getElementById("desk-viewfinder-still");
+    var ph = document.getElementById("desk-camera-placeholder");
+    var live = v && !v.classList.contains("hidden") && v.srcObject;
+    var hasStill = still && !still.classList.contains("hidden") && still.getAttribute("src");
+    if (ph) {
+      if (live || hasStill) {
+        ph.classList.add("hidden");
+      } else {
+        ph.classList.remove("hidden");
+      }
+    }
+    refreshDeskCameraStatus();
+  }
+
+  function stopDeskCamera() {
+    stopDeskCameraTracks();
+    syncDeskViewfinderLayers();
+  }
+
+  function startDeskCamera() {
+    if (!window.matchMedia("(min-width: 769px)").matches) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      syncDeskViewfinderLayers();
+      return;
+    }
+    var stillEl = document.getElementById("desk-viewfinder-still");
+    if (stillEl) {
+      stillEl.classList.add("hidden");
+      stillEl.removeAttribute("src");
+    }
+    stopDeskCameraTracks();
+    navigator.mediaDevices
+      .getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      })
+      .then(function (stream) {
+        deskCameraStream = stream;
+        var vid = document.getElementById("desk-camera-video");
+        if (!vid) return;
+        vid.srcObject = stream;
+        vid.classList.remove("hidden");
+        syncDeskViewfinderLayers();
+      })
+      .catch(function () {
+        syncDeskViewfinderLayers();
+      });
+  }
+
+  function showDeskViewfinderStill(dataUrl) {
+    stopDeskCameraTracks();
+    var still = document.getElementById("desk-viewfinder-still");
+    if (still) {
+      still.src = dataUrl;
+      still.classList.remove("hidden");
+    }
+    syncDeskViewfinderLayers();
+  }
+
+  function captureDeskPhotoFromVideo() {
+    var v = document.getElementById("desk-camera-video");
+    if (!v || !v.srcObject) return false;
+    if (v.readyState < 2) return false;
+    var w = v.videoWidth;
+    var h = v.videoHeight;
+    if (!w || !h) return false;
+    var canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+    ctx.drawImage(v, 0, 0, w, h);
+    var url = canvas.toDataURL("image/jpeg", 0.92);
+    state.uploadedImage = url;
+    showDeskViewfinderStill(url);
+    syncDeskRefCardFromState();
+    return true;
+  }
+
+  function syncDeskRefCardFromState() {
+    var thumbImg = document.getElementById("desk-ref-thumb-img");
+    var thumbFb = document.getElementById("desk-ref-thumb-fallback");
+    var dt = document.getElementById("desk-ref-datetime");
+    if (state.uploadedImage && thumbImg && thumbFb) {
+      thumbImg.src = state.uploadedImage;
+      thumbImg.classList.remove("hidden");
+      thumbFb.classList.add("hidden");
+    } else if (thumbImg && thumbFb) {
+      thumbImg.classList.add("hidden");
+      thumbFb.classList.remove("hidden");
+    }
+    if (dt) {
+      var now = new Date();
+      dt.textContent = formatLogDate(now) + " — " + formatLogTime(now);
+    }
+  }
+
+  function onDeskTakePhotoClick() {
+    if (!window.matchMedia("(min-width: 769px)").matches) return;
+    var v = document.getElementById("desk-camera-video");
+    if (v && v.srcObject && v.readyState >= 2 && v.videoWidth > 0) {
+      if (captureDeskPhotoFromVideo()) return;
+    }
+    startDeskCamera();
+  }
+
   function saveMobileRecord() {
     var notesEl = document.getElementById("mobile-log-notes");
     var idLine = document.getElementById("mobile-log-record-id");
@@ -892,6 +1032,16 @@
     if (id === "home") {
       var c = document.getElementById("canvas-desk-home-cloud");
       if (c) drawPointCloudMetatool(c, "desk-home-hero", 200);
+    }
+    if (id === "new-entry") {
+      if (state.uploadedImage) {
+        showDeskViewfinderStill(state.uploadedImage);
+        syncDeskRefCardFromState();
+      } else {
+        startDeskCamera();
+      }
+    } else {
+      stopDeskCamera();
     }
     if (id === "recall") {
       findDeskMatchesAndRender();
@@ -976,6 +1126,26 @@
     var deskFind = document.getElementById("desk-btn-find-recall");
     if (deskFind) {
       deskFind.addEventListener("click", findDeskMatchesAndRender);
+    }
+
+    var deskPhotoInput = document.getElementById("desk-photo-input");
+    if (deskPhotoInput) {
+      deskPhotoInput.addEventListener("change", function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f || !/^image\//.test(f.type)) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          state.uploadedImage = reader.result;
+          showDeskViewfinderStill(reader.result);
+          syncDeskRefCardFromState();
+        };
+        reader.readAsDataURL(f);
+        e.target.value = "";
+      });
+    }
+    var deskTake = document.getElementById("desk-btn-take-photo");
+    if (deskTake) {
+      deskTake.addEventListener("click", onDeskTakePhotoClick);
     }
     var deskClose = document.getElementById("desk-detail-close");
     if (deskClose) deskClose.addEventListener("click", closeDeskDetail);

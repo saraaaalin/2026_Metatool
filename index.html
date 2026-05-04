@@ -136,8 +136,8 @@
             </div>
             <div class="desk-viewfinder">
               <div class="desk-viewfinder__inner">
-                <div class="desk-home__right-grid" style="inset:0;position:absolute" aria-hidden="true"></div>
-                <svg style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
+                <div class="desk-home__right-grid desk-viewfinder__grid" style="inset:0;position:absolute" aria-hidden="true"></div>
+                <svg class="desk-viewfinder__overlay-svg" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
                   <line x1="33%" y1="0" x2="33%" y2="100%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
                   <line x1="66%" y1="0" x2="66%" y2="100%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
                   <line x1="0" y1="33%" x2="100%" y2="33%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
@@ -147,7 +147,9 @@
                   <path d="M16,264 L16,244 M16,264 L36,264" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
                   <path d="M384,264 L384,244 M384,264 L364,264" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
                 </svg>
-                <div style="text-align:center;position:relative;z-index:1">
+                <video id="desk-camera-video" class="desk-viewfinder__video hidden" playsinline muted autoplay aria-label="Desk camera preview"></video>
+                <img id="desk-viewfinder-still" class="desk-viewfinder__still hidden" alt="" />
+                <div id="desk-camera-placeholder" class="desk-camera-placeholder">
                   <svg width="44" height="38" viewBox="0 0 44 38" fill="none" style="opacity:0.3;display:block;margin:0 auto 10px" aria-hidden="true">
                     <rect x="1" y="9" width="42" height="28" rx="2" stroke="#0c0c0c" stroke-width="1.5" />
                     <path d="M15 9 L17 2 L27 2 L29 9" stroke="#0c0c0c" stroke-width="1.5" />
@@ -155,7 +157,7 @@
                     <circle cx="22" cy="23" r="3.5" stroke="#0c0c0c" stroke-width="1" />
                     <circle cx="35" cy="14" r="2" fill="#0c0c0c" opacity="0.5" />
                   </svg>
-                  <span style="font-family:var(--mono);font-size:9px;color:var(--gray3);letter-spacing:0.12em">CAMERA INACTIVE</span>
+                  <span id="desk-camera-status" style="font-family:var(--mono);font-size:9px;color:var(--gray3);letter-spacing:0.12em">CAMERA INACTIVE</span>
                 </div>
               </div>
               <div class="desk-viewfinder__strip">
@@ -163,15 +165,22 @@
               </div>
             </div>
             <div class="desk-or-row"><span>OR</span></div>
-            <button type="button" class="desk-upload-btn"><span>Upload Photo from Library</span><span style="opacity:.4">↑</span></button>
+            <label class="desk-upload-btn desk-upload-label">
+              <input type="file" id="desk-photo-input" accept="image/*" class="desk-upload-label__input" aria-label="Upload photo from library" />
+              <span class="desk-upload-label__face">Upload Photo from Library</span>
+              <span class="desk-upload-label__face" style="opacity:.4">↑</span>
+            </label>
             <div class="desk-ref-card">
-              <div class="desk-ref-thumb"><svg><use href="#desk-thumb" /></svg></div>
+              <div class="desk-ref-thumb">
+                <img id="desk-ref-thumb-img" alt="" class="hidden" style="width:100%;height:100%;object-fit:cover;display:block" />
+                <svg id="desk-ref-thumb-fallback" aria-hidden="true"><use href="#desk-thumb" /></svg>
+              </div>
               <div>
                 <div class="desk-caption" style="margin-bottom:3px">Last capture</div>
-                <div style="font-family:var(--mono);font-size:11px;color:var(--ink)">Mar 12, 2025 — 9:14am</div>
+                <div id="desk-ref-datetime" style="font-family:var(--mono);font-size:11px;color:var(--ink)">Mar 12, 2025 — 9:14am</div>
               </div>
             </div>
-            <button type="button" class="desk-take-photo"><span>Take Desk Photo</span><span style="font-size:16px;opacity:.5">◉</span></button>
+            <button type="button" class="desk-take-photo" id="desk-btn-take-photo"><span>Take Desk Photo</span><span style="font-size:16px;opacity:.5">◉</span></button>
           </div>
           <div class="desk-new__col">
             <div>
