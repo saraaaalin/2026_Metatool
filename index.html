@@ -4,256 +4,801 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0a0a0a" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Portable Attention Box — Attention Database</title>
+  <title>Portable Attention Box</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500&display=swap" rel="stylesheet" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <div class="status-bar">
-      <span class="time">9:41</span>
-      <div class="icons">
-        <div class="signal-bar" aria-hidden="true">
-          <span style="height:4px"></span>
-          <span style="height:6px"></span>
-          <span style="height:9px"></span>
-          <span style="height:12px"></span>
-        </div>
-        <span class="battery">▮</span>
-      </div>
-    </div>
+  <!-- Shared SVG defs (Metatool DeskThumb) -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="sr-only" aria-hidden="true">
+    <defs>
+      <symbol id="desk-thumb" viewBox="0 0 60 52">
+        <rect width="60" height="52" fill="#eae8e4" />
+        <g stroke="rgba(12,12,12,0.06)" stroke-width="0.5">
+          <line x1="0" y1="6.5" x2="60" y2="6.5" /><line x1="0" y1="13" x2="60" y2="13" /><line x1="0" y1="19.5" x2="60" y2="19.5" />
+          <line x1="0" y1="26" x2="60" y2="26" /><line x1="0" y1="32.5" x2="60" y2="32.5" /><line x1="0" y1="39" x2="60" y2="39" /><line x1="0" y1="45.5" x2="60" y2="45.5" />
+          <line x1="10" y1="0" x2="10" y2="52" /><line x1="20" y1="0" x2="20" y2="52" /><line x1="30" y1="0" x2="30" y2="52" /><line x1="40" y1="0" x2="40" y2="52" /><line x1="50" y1="0" x2="50" y2="52" />
+        </g>
+        <rect x="0" y="29" width="60" height="23" fill="#d4d1cb" />
+        <rect x="13" y="5" width="34" height="18" fill="#c6c3bd" rx="2" />
+        <rect x="21" y="23" width="18" height="3" fill="#b8b5af" />
+        <rect x="12" y="32" width="29" height="4" fill="#ccc9c2" rx="1" />
+        <rect x="44" y="31" width="6" height="8" fill="#b4b1aa" rx="2" />
+        <rect x="4" y="30" width="5" height="11" fill="#aaa7a0" />
+        <rect x="6" y="31" width="4" height="10" fill="#b0ada6" />
+      </symbol>
+    </defs>
+  </svg>
 
-    <!-- Site chrome: title + primary navigation -->
-    <header class="site-header">
-      <div class="header-inner">
-        <a href="#home" class="site-brand" data-nav="home">
-          <svg class="site-logo" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <rect x="0.5" y="0.5" width="15" height="15" stroke="currentColor" stroke-width="1" />
-            <line x1="8" y1="0" x2="8" y2="16" stroke="currentColor" stroke-width="0.5" />
-            <line x1="0" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="0.5" />
-            <circle cx="8" cy="8" r="2" fill="currentColor" />
-          </svg>
-          <span class="site-brand-text">Portable Attention Box</span>
-        </a>
-        <nav class="site-nav" aria-label="Main">
-          <a href="#home" data-nav="home">Home</a>
-          <a href="#new" data-nav="new">New Entry</a>
-          <a href="#archive" data-nav="archive">Archive</a>
-          <a href="#recall" data-nav="recall">Recall Mode</a>
-          <button type="button" id="btn-view-toggle" class="btn btn--small nav-view-toggle">Mobile View</button>
-        </nav>
+  <!-- ═══ DESKTOP: Metatool Website.html ═══ -->
+  <div class="shell-desktop" id="shell-desktop">
+    <nav class="desk-nav">
+      <a href="#home" class="desk-brand" data-desk-nav="home">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="0.5" y="0.5" width="15" height="15" stroke="currentColor" stroke-width="1" />
+          <line x1="8" y1="0" x2="8" y2="16" stroke="currentColor" stroke-width="0.5" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="0.5" />
+          <circle cx="8" cy="8" r="2" fill="currentColor" />
+        </svg>
+        <span>Portable Attention Box</span>
+      </a>
+      <div class="desk-nav-links">
+        <a href="#home" data-desk-nav="home">Home</a>
+        <a href="#new-entry" data-desk-nav="new-entry">New Entry</a>
+        <a href="#archive" data-desk-nav="archive">Archive</a>
+        <a href="#recall" data-desk-nav="recall">Recall Mode</a>
       </div>
-    </header>
+    </nav>
 
-    <main class="main">
-    <!-- Section 1: Project introduction + system diagram -->
-    <section id="page-home" class="page page--active" aria-labelledby="home-heading">
-      <div class="home-hero">
-        <div class="home-hero__left">
-          <p class="home-kicker">Research Instrument — Spatial Attention Systems</p>
-          <h1 id="home-heading" class="home-title">
-            Portable<br />
-            Attention<br />
-            Box
-          </h1>
-          <p class="lead home-lead">
-            This project investigates how <strong class="home-lead-strong">desk arrangements</strong>,
-            <strong class="home-lead-strong">lighting conditions</strong>, and
-            <strong class="home-lead-strong">emotional states</strong> relate to measurable attention and focus.
-            Each session is documented as a spatial record — linking what is on the desk to how it felt to work there.
-          </p>
-          <div class="home-cta">
-            <a href="#new" class="home-cta-btn home-cta-btn--primary" data-nav="new"
-              >New Entry <span class="home-cta-arrow" aria-hidden="true">→</span></a
-            >
-            <a href="#archive" class="home-cta-btn home-cta-btn--ghost" data-nav="archive"
-              >View Archive <span class="home-cta-arrow home-cta-arrow--muted" aria-hidden="true">→</span></a
-            >
-          </div>
-          <div class="home-flow">
-            <div class="home-flow__label">System Flow</div>
-            <div class="home-flow__steps" role="img" aria-label="System flow from desk to database">
-              <span class="home-flow__step">Real Desk</span>
-              <span class="home-flow__arrow" aria-hidden="true">→</span>
-              <span class="home-flow__step">Photo Input</span>
-              <span class="home-flow__arrow" aria-hidden="true">→</span>
-              <span class="home-flow__step">Point Cloud Map</span>
-              <span class="home-flow__arrow" aria-hidden="true">→</span>
-              <span class="home-flow__step">Attention Log</span>
-              <span class="home-flow__arrow" aria-hidden="true">→</span>
-              <span class="home-flow__step">Searchable Database</span>
+    <main class="desk-main">
+      <!-- Home -->
+      <section class="desk-page is-active" id="desk-page-home" data-desk-page="home">
+        <div class="desk-home">
+          <div class="desk-home__left">
+            <div>
+              <p class="desk-home__kicker">Research Instrument — Spatial Attention Systems</p>
+              <h1 class="desk-home__title">Portable<br />Attention<br />Box</h1>
+              <p class="desk-home__lead">
+                This project investigates how <strong>desk arrangements</strong>, <strong>lighting conditions</strong>, and
+                <strong>emotional states</strong> relate to measurable attention and focus. Each session is documented as a spatial
+                record — linking what is on the desk to how it felt to work there.
+              </p>
+              <div class="desk-home__cta">
+                <a href="#new-entry" class="desk-btn desk-btn--primary" data-desk-nav="new-entry">New Entry <span style="opacity:.5">→</span></a>
+                <a href="#archive" class="desk-btn desk-btn--ghost" data-desk-nav="archive">View Archive <span style="opacity:.4">→</span></a>
+              </div>
             </div>
-            <p class="meta-note home-flow__note">
-              Use <em>New Entry</em> to log a desk state. Records are stored locally in your browser.
-              <em>Recall Mode</em> retrieves past configurations closest to a target attention level.
-            </p>
-          </div>
-        </div>
-        <div class="home-hero__right">
-          <div class="home-hero__grid-fine" aria-hidden="true"></div>
-          <div class="home-hero__viz">
-            <canvas id="home-hero-cloud" width="540" height="580" aria-label="Point cloud visualization"></canvas>
-            <svg
-              class="home-hero__crosshair"
-              viewBox="0 0 540 580"
-              preserveAspectRatio="xMidYMid meet"
-              aria-hidden="true"
-            >
-              <line x1="270" y1="0" x2="270" y2="580" stroke="rgba(12,12,12,0.08)" stroke-width="0.5" stroke-dasharray="4,8" />
-              <line x1="0" y1="290" x2="540" y2="290" stroke="rgba(12,12,12,0.08)" stroke-width="0.5" stroke-dasharray="4,8" />
-              <circle cx="270" cy="290" r="6" fill="none" stroke="rgba(12,12,12,0.3)" stroke-width="1" />
-              <circle cx="270" cy="290" r="2" fill="rgba(12,12,12,0.4)" />
-            </svg>
-          </div>
-          <div class="home-hero__corner home-hero__corner--br">Point Cloud — Session #041</div>
-          <div class="home-hero__corner home-hero__corner--tl">X / Y / Z</div>
-          <div class="home-hero__axis-ticks">
-            <span>Density</span>
-            <span>Focus</span>
-            <span>Time</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Section 2: Form + spatial record preview (prototype) -->
-    <section id="page-new" class="page" aria-labelledby="new-heading">
-      <div class="page-inner">
-        <h1 id="new-heading" class="page-title">New Entry</h1>
-        <p class="section-intro">Document a desk session. Generate a placeholder spatial record, then save to the archive.</p>
-        <div class="step-indicator">
-          <span class="step active"></span>
-          <span class="step active"></span>
-          <span class="step"></span>
-          <span class="step"></span>
-          <em>2/4</em>
-        </div>
-        <div class="new-entry-layout">
-          <form id="entry-form" class="entry-form">
-            <div class="form-grid">
-              <label class="field">
-                <span class="field-label">Capture desk photo</span>
-                <div class="camera-actions">
-                  <button type="button" id="btn-start-camera" class="btn">Start Camera</button>
-                  <button type="button" id="btn-capture-photo" class="btn" disabled>Capture</button>
-                  <button type="button" id="btn-stop-camera" class="btn" disabled>Stop</button>
-                </div>
-                <div class="camera-viewfinder">
-                  <video id="camera-video" class="camera-video hidden" playsinline autoplay muted></video>
-                  <div class="viewfinder-grid" aria-hidden="true"></div>
-                </div>
-                <p id="camera-status" class="camera-status">Camera is off. You can also upload a photo file below.</p>
-              </label>
-              <label class="field">
-                <span class="field-label">Or upload photo file</span>
-                <input type="file" id="photo-input" accept="image/*" />
-              </label>
-              <label class="field">
-                <span class="field-label">Date</span>
-                <input type="date" id="entry-date" required />
-              </label>
-              <label class="field">
-                <span class="field-label">Attention / focus (0–100%)</span>
-                <input type="number" id="entry-focus" min="0" max="100" step="1" value="50" required />
-              </label>
-              <label class="field">
-                <span class="field-label">Mood / feeling</span>
-                <input type="text" id="entry-mood" placeholder="e.g. calm, restless" />
-              </label>
-              <label class="field">
-                <span class="field-label">Lighting condition</span>
-                <input type="text" id="entry-lighting" placeholder="e.g. window, lamp only" />
-              </label>
-              <label class="field field--full">
-                <span class="field-label">Notes (desk arrangement)</span>
-                <textarea id="entry-notes" rows="3" placeholder="Objects, layout, clutter…"></textarea>
-              </label>
+            <div class="desk-home__flow">
+              <div class="desk-home__flow-label">System Flow</div>
+              <div class="desk-home__flow-steps">
+                <span class="desk-flow-step">Real Desk</span><span class="desk-flow-arrow">→</span>
+                <span class="desk-flow-step">Photo Input</span><span class="desk-flow-arrow">→</span>
+                <span class="desk-flow-step">Point Cloud Map</span><span class="desk-flow-arrow">→</span>
+                <span class="desk-flow-step">Attention Log</span><span class="desk-flow-arrow">→</span>
+                <span class="desk-flow-step">Searchable Database</span>
+              </div>
+              <p class="desk-home__note">
+                Use <em>New Entry</em> to log a desk state. Records are stored locally in your browser. <em>Recall Mode</em> retrieves
+                past configurations closest to a target attention level.
+              </p>
             </div>
-            <div class="form-actions">
-              <button type="button" id="btn-generate" class="btn btn--primary">Generate Spatial Record</button>
-              <button type="button" id="btn-save" class="btn" disabled>Save to Archive</button>
+          </div>
+          <div class="desk-home__right">
+            <div class="desk-home__right-grid" aria-hidden="true"></div>
+            <div class="desk-home__viz">
+              <canvas id="canvas-desk-home-cloud" width="540" height="580" aria-label="Point cloud"></canvas>
+              <svg class="desk-home__crosshair" viewBox="0 0 540 580" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <line x1="270" y1="0" x2="270" y2="580" stroke="rgba(12,12,12,0.08)" stroke-width="0.5" stroke-dasharray="4,8" />
+                <line x1="0" y1="290" x2="540" y2="290" stroke="rgba(12,12,12,0.08)" stroke-width="0.5" stroke-dasharray="4,8" />
+                <circle cx="270" cy="290" r="6" fill="none" stroke="rgba(12,12,12,0.3)" stroke-width="1" />
+                <circle cx="270" cy="290" r="2" fill="rgba(12,12,12,0.4)" />
+              </svg>
             </div>
-          </form>
-
-          <div id="record-preview" class="record-preview hidden">
-            <h2 class="section-label">Spatial record (prototype)</h2>
-            <div class="preview-split">
-              <figure class="preview-card">
-                <figcaption>Photo input</figcaption>
-                <div class="preview-frame">
-                  <img id="preview-photo" alt="Desk photo preview" />
-                </div>
-              </figure>
-              <figure class="preview-card preview-card--dark">
-                <figcaption>Simulated arrangement / point cloud</figcaption>
-                <div class="preview-frame preview-frame--canvas">
-                  <canvas id="cloud-canvas-main" width="400" height="280" aria-label="Point cloud visualization"></canvas>
-                </div>
-              </figure>
-            </div>
-            <p class="hint">The point cloud is a front-end placeholder (density clusters, no CV). Each save stores a seed so the preview stays consistent in the archive.</p>
+            <div class="desk-corner-label desk-corner-label--br">Point Cloud — Session #041</div>
+            <div class="desk-corner-label desk-corner-label--tl">X / Y / Z</div>
+            <div class="desk-axis-ticks"><span>Density</span><span>Focus</span><span>Time</span></div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Section 3: Saved records grid -->
-    <section id="page-archive" class="page" aria-labelledby="archive-heading">
-      <div class="page-inner">
-        <h1 id="archive-heading" class="page-title">Archive</h1>
-        <p class="section-intro">Local attention records. Data persists in this browser only.</p>
-        <div class="archive-filter-row desktop-only">
-          <button type="button" class="btn btn--small">All</button>
-          <button type="button" class="btn btn--small">High Focus</button>
-          <button type="button" class="btn btn--small">Low Focus</button>
-          <button type="button" class="btn btn--small">This Week</button>
-        </div>
-        <div id="archive-empty" class="empty-state hidden">No records yet. Create an entry and save it.</div>
-        <div id="archive-grid" class="archive-grid"></div>
-      </div>
-    </section>
-
-    <!-- Section 4: Search by desired attention level -->
-    <section id="page-recall" class="page" aria-labelledby="recall-heading">
-      <div class="page-inner">
-        <h1 id="recall-heading" class="page-title">Recall Mode</h1>
-        <p class="section-intro">Find past desk configurations near a target focus level.</p>
-        <div class="recall-layout">
-          <div class="recall-controls card">
-            <label class="field field--inline">
-              <span class="field-label">Desired attention level (%)</span>
-              <input type="number" id="recall-target" min="0" max="100" step="1" value="60" />
-            </label>
-            <button type="button" id="btn-recall" class="btn btn--primary">Search archive</button>
+      <!-- New Entry -->
+      <section class="desk-page" id="desk-page-new-entry" data-desk-page="new-entry">
+        <div class="desk-new__steps">
+          <div class="desk-step-item">
+            <div class="desk-step-num is-current">1</div>
+            <span class="desk-step-label is-current">01 Capture</span>
           </div>
-          <aside class="recall-panel desktop-only">
-            <h3 class="section-label">Recall panel</h3>
-            <p class="section-intro">Desktop view surfaces matched records and their point-cloud context side by side for fast comparison.</p>
-          </aside>
+          <div class="desk-step-line is-done"></div>
+          <div class="desk-step-item">
+            <div class="desk-step-num">2</div>
+            <span class="desk-step-label">02 Spatial Process</span>
+          </div>
+          <div class="desk-step-line"></div>
+          <div class="desk-step-item">
+            <div class="desk-step-num">3</div>
+            <span class="desk-step-label">03 Attention Log</span>
+          </div>
+          <div class="desk-step-line"></div>
+          <div class="desk-step-item">
+            <div class="desk-step-num">4</div>
+            <span class="desk-step-label">04 Save</span>
+          </div>
         </div>
+        <div class="desk-new__grid">
+          <div class="desk-new__col desk-new__col--left">
+            <div>
+              <div class="desk-caption">Step 01 — Capture</div>
+              <p class="desk-p-sans">Frame your desk from the same angle each time for consistent spatial records.</p>
+            </div>
+            <div class="desk-viewfinder">
+              <div class="desk-viewfinder__inner">
+                <div class="desk-home__right-grid" style="inset:0;position:absolute" aria-hidden="true"></div>
+                <svg style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
+                  <line x1="33%" y1="0" x2="33%" y2="100%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
+                  <line x1="66%" y1="0" x2="66%" y2="100%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
+                  <line x1="0" y1="33%" x2="100%" y2="33%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
+                  <line x1="0" y1="66%" x2="100%" y2="66%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
+                  <path d="M16,16 L16,36 M16,16 L36,16" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
+                  <path d="M384,16 L384,36 M384,16 L364,16" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
+                  <path d="M16,264 L16,244 M16,264 L36,264" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
+                  <path d="M384,264 L384,244 M384,264 L364,264" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
+                </svg>
+                <div style="text-align:center;position:relative;z-index:1">
+                  <svg width="44" height="38" viewBox="0 0 44 38" fill="none" style="opacity:0.3;display:block;margin:0 auto 10px" aria-hidden="true">
+                    <rect x="1" y="9" width="42" height="28" rx="2" stroke="#0c0c0c" stroke-width="1.5" />
+                    <path d="M15 9 L17 2 L27 2 L29 9" stroke="#0c0c0c" stroke-width="1.5" />
+                    <circle cx="22" cy="23" r="8" stroke="#0c0c0c" stroke-width="1.5" />
+                    <circle cx="22" cy="23" r="3.5" stroke="#0c0c0c" stroke-width="1" />
+                    <circle cx="35" cy="14" r="2" fill="#0c0c0c" opacity="0.5" />
+                  </svg>
+                  <span style="font-family:var(--mono);font-size:9px;color:var(--gray3);letter-spacing:0.12em">CAMERA INACTIVE</span>
+                </div>
+              </div>
+              <div class="desk-viewfinder__strip">
+                <span>ALIGN WITH PREVIOUS RECORD</span><span>↕ LEVEL</span>
+              </div>
+            </div>
+            <div class="desk-or-row"><span>OR</span></div>
+            <button type="button" class="desk-upload-btn"><span>Upload Photo from Library</span><span style="opacity:.4">↑</span></button>
+            <div class="desk-ref-card">
+              <div class="desk-ref-thumb"><svg><use href="#desk-thumb" /></svg></div>
+              <div>
+                <div class="desk-caption" style="margin-bottom:3px">Last capture</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--ink)">Mar 12, 2025 — 9:14am</div>
+              </div>
+            </div>
+            <button type="button" class="desk-take-photo"><span>Take Desk Photo</span><span style="font-size:16px;opacity:.5">◉</span></button>
+          </div>
+          <div class="desk-new__col">
+            <div>
+              <div class="desk-next-h">What happens next</div>
+              <div>
+                <div class="desk-next-row">
+                  <span class="desk-next-num">02</span>
+                  <div>
+                    <div class="desk-next-title">Spatial Processing</div>
+                    <p class="desk-p-sans">Your photo is translated into a point cloud — a spatial record of object positions on your desk.</p>
+                  </div>
+                </div>
+                <div class="desk-next-row">
+                  <span class="desk-next-num">03</span>
+                  <div>
+                    <div class="desk-next-title">Attention Log</div>
+                    <p class="desk-p-sans">You rate your focus level, mood, and lighting. Add field notes about this session.</p>
+                  </div>
+                </div>
+                <div class="desk-next-row">
+                  <span class="desk-next-num">04</span>
+                  <div>
+                    <div class="desk-next-title">Save to Archive</div>
+                    <p class="desk-p-sans">The record is saved locally. Retrieve matching configurations anytime with Recall Mode.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="desk-guidance">
+              <h4>Capture Guidance</h4>
+              <div class="desk-guidance-grid">
+                <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Bird's-eye view preferred</span></div>
+                <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Even lighting, avoid glare</span></div>
+                <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Include full desk surface</span></div>
+                <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Consistent framing each time</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <h2 class="recall-results-title" id="recall-results-heading">Configurations closest to your desired attention state.</h2>
-        <div id="recall-empty" class="empty-state">Enter a percentage and search to see matches.</div>
-        <div id="recall-grid" class="archive-grid recall-grid hidden"></div>
-      </div>
-    </section>
+      <!-- Archive -->
+      <section class="desk-page" id="desk-page-archive" data-desk-page="archive">
+        <div class="desk-archive__head">
+          <div>
+            <div class="desk-caption" style="margin-bottom:6px">Portable Attention Box</div>
+            <h2>Attention Archive</h2>
+          </div>
+          <div class="desk-archive__meta">
+            <div>
+              <div class="desk-archive__meta-val">41</div>
+              <div class="desk-archive__meta-lbl">records</div>
+            </div>
+            <div>
+              <div class="desk-archive__meta-val">68</div>
+              <div class="desk-archive__meta-lbl">avg focus</div>
+            </div>
+          </div>
+        </div>
+        <div class="desk-filter-bar">
+          <button type="button" class="is-active">All</button>
+          <button type="button">High Focus (80+)</button>
+          <button type="button">Low Focus (&lt;60)</button>
+          <button type="button">This Week</button>
+          <button type="button">Calm</button>
+          <button type="button">Focused</button>
+          <button type="button" class="desk-sort">↕ SORT</button>
+        </div>
+        <div class="desk-table-head">
+          <div>Photo</div><div>Cloud</div><div>Record ID</div><div>Date</div><div>Focus</div><div>Mood</div><div>Light</div><div></div>
+        </div>
+        <div class="desk-table-body" id="desk-archive-rows"></div>
+      </section>
+
+      <!-- Recall -->
+      <section class="desk-page" id="desk-page-recall" data-desk-page="recall">
+        <div class="desk-recall">
+          <div class="desk-recall__left">
+            <div>
+              <div class="desk-caption" style="margin-bottom:6px">Attention Retrieval</div>
+              <p class="desk-p-sans">Find past desk configurations closest to your desired attention state.</p>
+            </div>
+            <div class="desk-recall__panel">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+                <span class="desk-caption" style="margin:0">Desired Focus Level</span>
+                <span class="desk-recall__focus-big">85<small>%</small></span>
+              </div>
+              <div class="focus-slider-track" style="margin-bottom:4px">
+                <div class="focus-slider-fill" style="width:85%"></div>
+                <span class="desk-slider-thumb-dot"></span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--gray3)">
+                <span>0 — Scattered</span><span>50</span><span>100 — Deep</span>
+              </div>
+            </div>
+            <div>
+              <div class="desk-caption" style="margin-bottom:8px">Mood Preference</div>
+              <div class="desk-chip-row">
+                <button type="button">Any</button><button type="button">Calm</button><button type="button" class="is-on">Focused</button><button type="button">Alert</button><button type="button">Energized</button>
+              </div>
+            </div>
+            <div>
+              <div class="desk-caption" style="margin-bottom:8px">Lighting Condition</div>
+              <div class="desk-chip-row">
+                <button type="button">Any</button><button type="button" class="is-on">Bright</button><button type="button">Soft</button><button type="button">Dim</button>
+              </div>
+            </div>
+            <div style="height:1px;background:var(--gray1)"></div>
+            <div>
+              <div class="desk-caption" style="margin-bottom:8px">Date Range</div>
+              <div class="desk-chip-row">
+                <button type="button" class="is-on">All Time</button><button type="button">Last Month</button><button type="button">Last Week</button>
+              </div>
+            </div>
+            <button type="button" class="desk-recall__cta"><span>Find Matching Configurations</span><span style="opacity:.5">⌕</span></button>
+          </div>
+          <div class="desk-recall__right">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <div>
+                <div class="desk-next-h" style="margin-bottom:4px">Matched Records</div>
+                <span style="font-family:var(--mono);font-size:22px;font-weight:500;color:var(--ink)">4 </span>
+                <span style="font-family:var(--mono);font-size:10px;color:var(--gray3)">results</span>
+              </div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--gray3);letter-spacing:0.1em">Sorted by match score</div>
+            </div>
+            <div id="desk-recall-results"></div>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <footer class="site-footer">
-      <p class="site-footer__tag">Portable Attention Box — personal attention database (local prototype)</p>
-      <div class="site-footer__right">
-        <span class="site-footer__version" aria-hidden="true">v0.4.1</span>
-        <button type="button" id="btn-install" class="btn btn--small hidden">Install App</button>
-      </div>
+    <footer class="desk-footer">
+      <span>Portable Attention Box — personal attention database (local prototype)</span>
+      <span>v0.4.1</span>
     </footer>
   </div>
+
+  <!-- ═══ MOBILE: Portable Attention Box.html ═══ -->
+  <div class="shell-mobile" id="shell-mobile">
+    <div class="phone phone--landing" id="phone-root">
+      <!-- Landing -->
+      <section class="mobile-screen is-active" id="mobile-landing" data-mobile-screen="landing">
+        <div id="mobile-halftone" class="halftone-bg" aria-hidden="true"></div>
+        <div class="screen-content" style="justify-content:space-between">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="icons">
+              <div class="signal-bar" aria-hidden="true">
+                <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:12px"></span>
+              </div>
+              <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="13" height="9" rx="2" stroke="#6b6966" stroke-width="1" />
+                <rect x="1.5" y="1.5" width="10" height="7" rx="1" fill="#0c0c0c" />
+                <rect x="14" y="3" width="2" height="4" rx="1" fill="#6b6966" />
+              </svg>
+            </div>
+          </div>
+          <div style="padding:8px 24px 0;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1">
+            <span style="font-size:8px;letter-spacing:0.2em;color:var(--gray3);text-transform:uppercase">System v0.4.1</span>
+            <span style="font-size:8px;letter-spacing:0.2em;color:var(--gray3);text-transform:uppercase">PAB</span>
+          </div>
+          <div style="padding:0 24px;flex-grow:1;display:flex;flex-direction:column;justify-content:center">
+            <div class="mobile-landing-hero">
+              <canvas id="canvas-mobile-landing-pc" width="342" height="260" class="pc-canvas"></canvas>
+              <svg class="mobile-crosshair" viewBox="0 0 342 260" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <line x1="171" y1="0" x2="171" y2="260" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" stroke-dasharray="3,6" />
+                <line x1="0" y1="130" x2="342" y2="130" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" stroke-dasharray="3,6" />
+                <circle cx="171" cy="130" r="4" fill="none" stroke="rgba(12,12,12,0.4)" stroke-width="1" />
+              </svg>
+            </div>
+            <div style="border-top:1px solid var(--gray1);padding-top:16px">
+              <div style="font-size:8px;letter-spacing:0.25em;color:var(--gray3);text-transform:uppercase;margin-bottom:6px">Research instrument</div>
+              <h1 style="font-family:var(--mono);font-size:22px;font-weight:500;line-height:1.15;letter-spacing:-0.01em;margin-bottom:10px">Portable<br />Attention Box</h1>
+              <p style="font-family:var(--sans);font-size:11px;color:var(--gray3);line-height:1.6;font-weight:300;max-width:280px">A personal attention database for workspace arrangements</p>
+            </div>
+          </div>
+          <div style="padding:0 0 40px">
+            <button type="button" class="btn-primary" style="margin-bottom:2px" data-mobile-go="capture"><span>Start New Record</span><span style="opacity:0.5">→</span></button>
+            <button type="button" class="btn-ghost" data-mobile-go="archive"><span>View Archive</span><span style="opacity:0.4">→</span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Capture -->
+      <section class="mobile-screen" id="mobile-capture" data-mobile-screen="capture">
+        <div class="screen-content">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="icons">
+              <div class="signal-bar" aria-hidden="true">
+                <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:12px"></span>
+              </div>
+              <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="13" height="9" rx="2" stroke="#6b6966" stroke-width="1" />
+                <rect x="1.5" y="1.5" width="10" height="7" rx="1" fill="#0c0c0c" />
+                <rect x="14" y="3" width="2" height="4" rx="1" fill="#6b6966" />
+              </svg>
+            </div>
+          </div>
+          <div class="nav-bar">
+            <button type="button" class="back-btn" data-mobile-go="landing">← Home</button>
+            <span class="screen-title">New Record</span>
+            <span style="width:60px"></span>
+          </div>
+          <div style="padding:10px 20px;display:flex;gap:4px;align-items:center">
+            <div style="height:2px;flex:1;background:var(--ink)"></div>
+            <div style="height:2px;flex:1;background:var(--gray1)"></div>
+            <div style="height:2px;flex:1;background:var(--gray1)"></div>
+            <div style="height:2px;flex:1;background:var(--gray1)"></div>
+            <span style="font-size:8px;letter-spacing:0.15em;color:var(--gray3);margin-left:6px">1/4</span>
+          </div>
+          <div style="padding:8px 20px 12px">
+            <div class="field-label" style="margin-bottom:2px">Step 01 — Capture</div>
+            <p style="font-family:var(--sans);font-size:11px;color:var(--gray3);line-height:1.5">Frame your desk from the same angle each time</p>
+          </div>
+          <div style="margin:0 20px;position:relative;border:1px solid var(--gray1)">
+            <div style="height:280px;background:var(--paper2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+              <svg style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
+                <line x1="33%" y1="0" x2="33%" y2="100%" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" />
+                <line x1="66%" y1="0" x2="66%" y2="100%" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" />
+                <line x1="0" y1="33%" x2="100%" y2="33%" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" />
+                <line x1="0" y1="66%" x2="100%" y2="66%" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" />
+                <path d="M12,12 L12,28 M12,12 L28,12" stroke="rgba(12,12,12,0.5)" stroke-width="1.5" fill="none" />
+                <path d="M338,12 L338,28 M338,12 L322,12" stroke="rgba(12,12,12,0.5)" stroke-width="1.5" fill="none" />
+                <path d="M12,268 L12,252 M12,268 L28,268" stroke="rgba(12,12,12,0.5)" stroke-width="1.5" fill="none" />
+                <path d="M338,268 L338,252 M338,268 L322,268" stroke="rgba(12,12,12,0.5)" stroke-width="1.5" fill="none" />
+              </svg>
+              <div style="text-align:center;z-index:1">
+                <svg width="40" height="34" viewBox="0 0 40 34" fill="none" style="opacity:0.3" aria-hidden="true">
+                  <rect x="1" y="8" width="38" height="25" rx="2" stroke="#0c0c0c" stroke-width="1.5" />
+                  <path d="M14 8 L16 2 L24 2 L26 8" stroke="#0c0c0c" stroke-width="1.5" />
+                  <circle cx="20" cy="20" r="7" stroke="#0c0c0c" stroke-width="1.5" />
+                  <circle cx="20" cy="20" r="3" stroke="#0c0c0c" stroke-width="1" />
+                  <circle cx="32" cy="13" r="1.5" fill="#0c0c0c" opacity="0.5" />
+                </svg>
+                <div style="margin-top:8;font-size:9px;color:var(--gray3);letter-spacing:0.1em">CAMERA INACTIVE</div>
+              </div>
+            </div>
+            <div style="padding:6px 10px;background:rgba(12,12,12,0.03);border-top:1px solid var(--gray1);display:flex;justify-content:space-between;font-size:8px;letter-spacing:0.1em;color:var(--gray3)">
+              <span>ALIGN WITH PREVIOUS RECORD</span><span>↕ LEVEL</span>
+            </div>
+          </div>
+          <div style="padding:14px 20px;display:flex;align-items:center;gap:10px">
+            <div style="flex:1;height:1px;background:var(--gray1)"></div>
+            <span style="font-size:8px;color:var(--gray3);letter-spacing:0.15em">OR</span>
+            <div style="flex:1;height:1px;background:var(--gray1)"></div>
+          </div>
+          <div style="padding:0 20px;margin-bottom:4px">
+            <button type="button" class="btn-ghost" style="padding:11px 20px"><span style="font-size:10px">Upload Photo from Library</span><span style="opacity:0.4">↑</span></button>
+          </div>
+          <div style="margin:14px 20px 0;padding:10px;border:1px solid var(--gray1);display:flex;gap:10px;align-items:center">
+            <div style="width:44px;height:44px;background:var(--paper2);border:1px solid var(--gray1);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span style="font-size:7px;color:var(--gray3);letter-spacing:0.05em">REF</span>
+            </div>
+            <div>
+              <div style="font-size:8px;letter-spacing:0.1em;color:var(--gray3);text-transform:uppercase;margin-bottom:2px">Last capture</div>
+              <div style="font-size:10px;color:var(--ink)">Mar 12, 2025 — 9:14am</div>
+            </div>
+          </div>
+          <div style="flex-grow:1"></div>
+          <button type="button" class="btn-primary" data-mobile-go="processing"><span>Take Desk Photo</span><span style="font-size:14px;opacity:0.5">◉</span></button>
+        </div>
+      </section>
+
+      <!-- Processing -->
+      <section class="mobile-screen" id="mobile-processing" data-mobile-screen="processing">
+        <div class="screen-content">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="icons">
+              <div class="signal-bar" aria-hidden="true">
+                <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:12px"></span>
+              </div>
+              <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="13" height="9" rx="2" stroke="#6b6966" stroke-width="1" />
+                <rect x="1.5" y="1.5" width="10" height="7" rx="1" fill="#0c0c0c" />
+                <rect x="14" y="3" width="2" height="4" rx="1" fill="#6b6966" />
+              </svg>
+            </div>
+          </div>
+          <div class="nav-bar">
+            <button type="button" class="back-btn" data-mobile-go="capture">← Capture</button>
+            <span class="screen-title">Spatial Processing</span>
+            <span style="width:60px"></span>
+          </div>
+          <div style="padding:10px 20px;display:flex;gap:4px;align-items:center">
+            <div style="height:2px;flex:1;background:var(--ink)"></div>
+            <div style="height:2px;flex:1;background:var(--ink)"></div>
+            <div style="height:2px;flex:1;background:var(--gray1)"></div>
+            <div style="height:2px;flex:1;background:var(--gray1)"></div>
+            <span style="font-size:8px;letter-spacing:0.15em;color:var(--gray3);margin-left:6px">2/4</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:8px 20px;border:1px solid var(--gray1)">
+            <div style="position:relative">
+              <svg width="174" height="200" viewBox="0 0 174 200" style="display:block"><use href="#desk-photo-svg" /></svg>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:rgba(248,247,245,0.85);border-top:1px solid var(--gray1)">
+                <span style="font-size:7px;letter-spacing:0.12em;color:var(--gray3);text-transform:uppercase">Source Image</span>
+              </div>
+            </div>
+            <div style="background:var(--paper2);position:relative">
+              <canvas id="canvas-mobile-proc-pc" width="174" height="200"></canvas>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:rgba(239,239,237,0.85);border-top:1px solid var(--gray1)">
+                <span style="font-size:7px;letter-spacing:0.12em;color:var(--gray3);text-transform:uppercase">Spatial Record</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding:4px 20px;display:flex;gap:16px">
+            <span style="font-size:7px;letter-spacing:0.08em;color:var(--gray3)">X — Horizontal</span>
+            <span style="font-size:7px;letter-spacing:0.08em;color:var(--gray3)">Y — Vertical</span>
+            <span style="font-size:7px;letter-spacing:0.08em;color:var(--gray3)">Z — Depth</span>
+          </div>
+          <div class="divider" style="margin:8px 20px"></div>
+          <div style="padding:8px 20px">
+            <div class="field-label" style="margin-bottom:10px">Processing Log</div>
+            <div class="processing-item"><span class="processing-dot done"></span><span style="color:var(--gray3)">Translating desk image into spatial record</span><span style="margin-left:auto;font-size:8px;color:var(--gray3)">✓</span></div>
+            <div class="processing-item"><span class="processing-dot done"></span><span style="color:var(--gray3)">Detecting object density</span><span style="margin-left:auto;font-size:8px;color:var(--gray3)">✓</span></div>
+            <div class="processing-item"><span class="processing-dot active"></span><span style="color:var(--ink)">Mapping attention environment</span></div>
+          </div>
+          <div class="divider" style="margin:4px 20px"></div>
+          <div style="padding:12px 20px">
+            <div class="field-label" style="margin-bottom:8px">Detected Objects</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">
+              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Monitor ×1</span>
+              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Keyboard ×1</span>
+              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Coffee Mug ×1</span>
+              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Books ×2</span>
+              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Plant ×1</span>
+            </div>
+          </div>
+          <div style="margin:0 20px;border:1px solid var(--gray1);padding:8px 10px;background:var(--paper2)">
+            <div class="field-label" style="margin-bottom:4px">Density Distribution</div>
+            <div style="display:flex;gap:2px;align-items:flex-end;height:28px">
+              <span style="flex:1;background:var(--ink);opacity:0.41;height:30%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.55;height:50%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.69;height:70%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.83;height:90%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.73;height:75%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.62;height:60%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.48;height:40%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.59;height:55%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.76;height:80%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.66;height:65%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.52;height:45%"></span>
+              <span style="flex:1;background:var(--ink);opacity:0.45;height:35%"></span>
+            </div>
+          </div>
+          <div style="flex-grow:1"></div>
+          <button type="button" class="btn-primary" data-mobile-go="log"><span>Continue to Log</span><span style="opacity:0.5">→</span></button>
+        </div>
+      </section>
+
+      <!-- Attention Log -->
+      <section class="mobile-screen" id="mobile-log" data-mobile-screen="log">
+        <div class="screen-content">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="icons">
+              <div class="signal-bar" aria-hidden="true">
+                <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:12px"></span>
+              </div>
+              <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="13" height="9" rx="2" stroke="#6b6966" stroke-width="1" />
+                <rect x="1.5" y="1.5" width="10" height="7" rx="1" fill="#0c0c0c" />
+                <rect x="14" y="3" width="2" height="4" rx="1" fill="#6b6966" />
+              </svg>
+            </div>
+          </div>
+          <div class="nav-bar">
+            <button type="button" class="back-btn" data-mobile-go="processing">← Processing</button>
+            <span class="screen-title">Attention Log</span>
+            <span style="width:60px"></span>
+          </div>
+          <div style="padding:10px 20px;display:flex;gap:4px;align-items:center">
+            <div style="height:2px;flex:1;background:var(--ink)"></div>
+            <div style="height:2px;flex:1;background:var(--ink)"></div>
+            <div style="height:2px;flex:1;background:var(--ink)"></div>
+            <div style="height:2px;flex:1;background:var(--gray1)"></div>
+            <span style="font-size:8px;letter-spacing:0.15em;color:var(--gray3);margin-left:6px">3/4</span>
+          </div>
+          <div style="padding:14px 20px 8px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+              <div class="field-label" style="margin-bottom:0">Focus Level</div>
+              <div style="font-size:22px;font-weight:500;font-family:var(--mono);letter-spacing:-0.02em">72<span style="font-size:12px;color:var(--gray3)">%</span></div>
+            </div>
+            <div class="focus-slider-track">
+              <div class="focus-slider-fill" style="width:72%"></div>
+              <div class="focus-slider-thumb" style="left:72%"></div>
+            </div>
+            <div class="slider-labels"><span>0 — Scattered</span><span>50 — Moderate</span><span>100 — Deep</span></div>
+            <div style="display:flex;gap:1px;margin-top:8px">
+              <span style="flex:1;height:4px;background:var(--ink);opacity:0.2"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.26"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.32"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.38"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.44"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.5"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.56"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.62"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.68"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.74"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.8"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.86"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.9"></span><span style="flex:1;height:4px;background:var(--ink);opacity:0.9"></span>
+              <span style="flex:1;height:4px;background:var(--gray1)"></span><span style="flex:1;height:4px;background:var(--gray1)"></span><span style="flex:1;height:4px;background:var(--gray1)"></span><span style="flex:1;height:4px;background:var(--gray1)"></span><span style="flex:1;height:4px;background:var(--gray1)"></span><span style="flex:1;height:4px;background:var(--gray1)"></span>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="section" style="padding-bottom:12px">
+            <div class="field-label" style="margin-bottom:8px">Current Mood</div>
+            <input class="text-input" placeholder="e.g. calm, restless, energized…" />
+            <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+              <button type="button" class="chip active">Calm</button>
+              <button type="button" class="chip">Focused</button>
+              <button type="button" class="chip">Anxious</button>
+              <button type="button" class="chip">Restless</button>
+              <button type="button" class="chip">Alert</button>
+              <button type="button" class="chip">Tired</button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="section" style="padding-bottom:12px">
+            <div class="field-label" style="margin-bottom:8px">Lighting Condition</div>
+            <div class="chip-row">
+              <button type="button" class="chip">Bright</button>
+              <button type="button" class="chip active">Soft</button>
+              <button type="button" class="chip">Dim</button>
+              <button type="button" class="chip">Direct Sun</button>
+              <button type="button" class="chip">Artificial</button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="section" style="padding-bottom:12px">
+            <div class="field-label" style="margin-bottom:8px">Field Notes</div>
+            <textarea class="notes-area" placeholder="Observations about this session…" rows="3"></textarea>
+          </div>
+          <div style="padding:0 20px 10px;display:flex;justify-content:space-between">
+            <span style="font-size:8px;color:var(--gray3);letter-spacing:0.1em">RECORD ID — PAB-2025-0412-041</span>
+            <span style="font-size:8px;color:var(--gray3);letter-spacing:0.1em">9:41 AM</span>
+          </div>
+          <button type="button" class="btn-primary" style="margin-top:auto" data-mobile-go="archive"><span>Save Record</span><span style="opacity:0.5">→</span></button>
+        </div>
+      </section>
+
+      <!-- Archive -->
+      <section class="mobile-screen" id="mobile-archive" data-mobile-screen="archive">
+        <div class="screen-content">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="icons">
+              <div class="signal-bar" aria-hidden="true">
+                <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:12px"></span>
+              </div>
+              <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="13" height="9" rx="2" stroke="#6b6966" stroke-width="1" />
+                <rect x="1.5" y="1.5" width="10" height="7" rx="1" fill="#0c0c0c" />
+                <rect x="14" y="3" width="2" height="4" rx="1" fill="#6b6966" />
+              </svg>
+            </div>
+          </div>
+          <div style="padding:12px 20px;border-bottom:1px solid var(--gray1);display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:8px;letter-spacing:0.2em;color:var(--gray3);text-transform:uppercase;margin-bottom:2px">Portable Attention Box</div>
+              <div style="font-size:16px;font-weight:500;letter-spacing:-0.01em">Attention Archive</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:500">41</div>
+              <div style="font-size:8px;letter-spacing:0.1em;color:var(--gray3)">records</div>
+            </div>
+          </div>
+          <div style="padding:8px 20px;display:flex;gap:5px;border-bottom:1px solid var(--gray1);flex-wrap:wrap">
+            <button type="button" class="chip active" style="font-size:7px;padding:3px 7px">All</button>
+            <button type="button" class="chip" style="font-size:7px;padding:3px 7px">High Focus</button>
+            <button type="button" class="chip" style="font-size:7px;padding:3px 7px">Low Focus</button>
+            <button type="button" class="chip" style="font-size:7px;padding:3px 7px">This Week</button>
+            <button type="button" class="chip" style="font-size:7px;padding:3px 7px" data-mobile-go="recall">Recall</button>
+          </div>
+          <div style="overflow-y:auto;flex:1;padding-top:12px;display:flex;flex-direction:column;gap:8px;min-height:0" id="mobile-archive-list"></div>
+          <button type="button" class="btn-ghost" style="margin:4px 20px 20px;width:calc(100% - 40px)"><span>Load Earlier Records</span><span style="opacity:0.4">↓</span></button>
+        </div>
+      </section>
+
+      <!-- Recall -->
+      <section class="mobile-screen" id="mobile-recall" data-mobile-screen="recall">
+        <div class="screen-content">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="icons">
+              <div class="signal-bar" aria-hidden="true">
+                <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:12px"></span>
+              </div>
+              <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="13" height="9" rx="2" stroke="#6b6966" stroke-width="1" />
+                <rect x="1.5" y="1.5" width="10" height="7" rx="1" fill="#0c0c0c" />
+                <rect x="14" y="3" width="2" height="4" rx="1" fill="#6b6966" />
+              </svg>
+            </div>
+          </div>
+          <div class="nav-bar">
+            <button type="button" class="back-btn" data-mobile-go="archive">← Archive</button>
+            <span class="screen-title">Recall Mode</span>
+            <span style="width:60px"></span>
+          </div>
+          <div style="padding:14px 20px 10px">
+            <div class="field-label" style="margin-bottom:4px">Attention Retrieval</div>
+            <p style="font-family:var(--sans);font-size:11px;color:var(--gray3);line-height:1.6">Configurations closest to your desired attention state</p>
+          </div>
+          <div style="margin:0 20px;border:1px solid var(--ink);padding:14px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+              <div class="field-label" style="margin-bottom:0">Desired Focus Level</div>
+              <div style="font-size:28px;font-weight:500;letter-spacing:-0.02em">85<span style="font-size:13px;color:var(--gray3)">%</span></div>
+            </div>
+            <div class="focus-slider-track">
+              <div class="focus-slider-fill" style="width:85%"></div>
+              <div class="focus-slider-thumb" style="left:85%"></div>
+            </div>
+            <div class="slider-labels"><span>0</span><span>50</span><span>100</span></div>
+          </div>
+          <div style="padding:10px 20px">
+            <div class="field-label" style="margin-bottom:6px">Mood Preference</div>
+            <div class="chip-row">
+              <button type="button" class="chip">Any</button>
+              <button type="button" class="chip">Calm</button>
+              <button type="button" class="chip active">Focused</button>
+              <button type="button" class="chip">Alert</button>
+            </div>
+          </div>
+          <div style="margin:0 20px 12px">
+            <button type="button" class="btn-primary"><span>Find Matching Configuration</span><span style="opacity:0.5">⌕</span></button>
+          </div>
+          <div class="divider"></div>
+          <div style="padding:10px 20px 6px">
+            <div class="field-label">Matched Records <span style="margin-left:6px;font-style:normal;color:var(--ink);letter-spacing:0">3</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:20px" id="mobile-recall-list"></div>
+        </div>
+      </section>
+
+      <!-- Detail -->
+      <section class="mobile-screen" id="mobile-detail" data-mobile-screen="detail">
+        <div class="screen-content">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="icons">
+              <div class="signal-bar" aria-hidden="true">
+                <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:12px"></span>
+              </div>
+              <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="13" height="9" rx="2" stroke="#6b6966" stroke-width="1" />
+                <rect x="1.5" y="1.5" width="10" height="7" rx="1" fill="#0c0c0c" />
+                <rect x="14" y="3" width="2" height="4" rx="1" fill="#6b6966" />
+              </svg>
+            </div>
+          </div>
+          <div class="nav-bar">
+            <button type="button" class="back-btn" data-mobile-go="archive">← Archive</button>
+            <span class="screen-title">Record Detail</span>
+            <span style="width:60px"></span>
+          </div>
+          <div style="padding:8px 20px 10px;border-bottom:1px solid var(--gray1);display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:8px;letter-spacing:0.2em;color:var(--gray3);margin-bottom:1px">PAB-2025-0412-040</div>
+              <div style="font-size:13px;font-weight:500">Apr 11, 2025 — 8:15am</div>
+            </div>
+            <div style="padding:3px 8px;border:1px solid var(--ink);font-size:8px;letter-spacing:0.1em">88% focus</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:12px 20px;border:1px solid var(--gray1)">
+            <div style="position:relative">
+              <svg width="174" height="170" viewBox="0 0 174 200" preserveAspectRatio="xMidYMid slice" style="display:block"><use href="#desk-photo-svg" /></svg>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 6px;background:rgba(248,247,245,0.85);border-top:1px solid var(--gray1)">
+                <span style="font-size:7px;letter-spacing:0.1em;color:var(--gray3)">PHOTOGRAPH</span>
+              </div>
+            </div>
+            <div style="background:var(--paper2);position:relative">
+              <canvas id="canvas-mobile-detail-pc" width="174" height="170"></canvas>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 6px;background:rgba(239,239,237,0.85);border-top:1px solid var(--gray1)">
+                <span style="font-size:7px;letter-spacing:0.1em;color:var(--gray3)">POINT CLOUD</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding:0 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="detail-stat"><span class="s-label">Focus Level</span><span class="s-value">88%</span></div>
+            <div class="detail-stat"><span class="s-label">Mood</span><span class="s-value">Focused</span></div>
+            <div class="detail-stat"><span class="s-label">Lighting</span><span class="s-value">Bright</span></div>
+            <div class="detail-stat"><span class="s-label">Duration</span><span class="s-value">2h 14m</span></div>
+          </div>
+          <div class="divider" style="margin:0 20px 12px"></div>
+          <div style="padding:0 20px 10px">
+            <div class="field-label" style="margin-bottom:6px">Detected Objects</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              <span style="padding:2px 7px;border:1px solid var(--gray1);font-size:8px;color:var(--gray3);letter-spacing:0.06em">Monitor ×1</span>
+              <span style="padding:2px 7px;border:1px solid var(--gray1);font-size:8px;color:var(--gray3);letter-spacing:0.06em">Keyboard ×1</span>
+              <span style="padding:2px 7px;border:1px solid var(--gray1);font-size:8px;color:var(--gray3);letter-spacing:0.06em">Mug ×1</span>
+              <span style="padding:2px 7px;border:1px solid var(--gray1);font-size:8px;color:var(--gray3);letter-spacing:0.06em">Books ×2</span>
+              <span style="padding:2px 7px;border:1px solid var(--gray1);font-size:8px;color:var(--gray3);letter-spacing:0.06em">Plant ×1</span>
+            </div>
+          </div>
+          <div style="margin:0 20px 10px;padding:10px;background:var(--paper2);border:1px solid var(--gray1)">
+            <div class="field-label" style="margin-bottom:5px">Field Notes</div>
+            <p style="font-family:var(--sans);font-size:11px;color:var(--gray3);line-height:1.6">
+              Morning session. Light came from left window. Monitor slightly above eye level. Good sustained focus — plant may be contributing positively.
+            </p>
+          </div>
+          <div style="padding:0 20px 12px">
+            <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--gray3);letter-spacing:0.08em;margin-bottom:4px">
+              <span>Focus distribution</span><span>88%</span>
+            </div>
+            <div style="height:3px;background:var(--gray1);position:relative">
+              <div style="position:absolute;left:0;top:0;height:100%;width:88%;background:var(--ink)"></div>
+            </div>
+          </div>
+          <button type="button" class="btn-primary" style="margin-top:auto"><span>Recreate This Setup</span><span style="opacity:0.5">↻</span></button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- DeskPhoto SVG symbol (Portable mock) -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="sr-only" aria-hidden="true">
+    <defs>
+      <symbol id="desk-photo-svg" viewBox="0 0 174 200">
+        <rect width="174" height="200" fill="#e8e6e2" />
+        <g stroke="rgba(12,12,12,0.08)" stroke-width="0.5">
+          <line x1="0" y1="22" x2="174" y2="22" /><line x1="0" y1="44" x2="174" y2="44" /><line x1="0" y1="66" x2="174" y2="66" />
+          <line x1="0" y1="88" x2="174" y2="88" /><line x1="0" y1="111" x2="174" y2="111" /><line x1="0" y1="133" x2="174" y2="133" /><line x1="0" y1="155" x2="174" y2="155" /><line x1="0" y1="177" x2="174" y2="177" />
+          <line x1="25" y1="0" x2="25" y2="200" /><line x1="50" y1="0" x2="50" y2="200" /><line x1="75" y1="0" x2="75" y2="200" /><line x1="100" y1="0" x2="100" y2="200" /><line x1="125" y1="0" x2="125" y2="200" /><line x1="150" y1="0" x2="150" y2="200" />
+        </g>
+        <rect x="0" y="110" width="174" height="90" fill="#d8d5cf" />
+        <rect x="44" y="24" width="87" height="64" fill="#c8c5bf" rx="2" />
+        <rect x="66" y="88" width="42" height="8" fill="#bbb8b2" />
+        <rect x="38" y="124" width="78" height="14" fill="#ccc9c3" rx="2" />
+        <rect x="125" y="116" width="17" height="28" fill="#b8b5af" rx="2" />
+        <rect x="14" y="114" width="14" height="44" fill="#a8a5a0" />
+        <rect x="21" y="118" width="10" height="40" fill="#b2afaa" />
+        <ellipse cx="150" cy="104" rx="12" ry="18" fill="#9a9890" />
+        <rect x="144" y="120" width="10" height="20" fill="#8a8780" rx="1" />
+        <text x="6" y="194" font-family="IBM Plex Mono" font-size="7" fill="rgba(12,12,12,0.3)" letter-spacing="0.05em">DESK.JPG</text>
+      </symbol>
+    </defs>
+  </svg>
 
   <script src="script.js"></script>
 </body>
