@@ -766,6 +766,11 @@
       return !skip[r.id];
     });
     saveRecordsToStorage(all);
+    var cur = state.selectedRecord;
+    if (cur && skip[cur.id]) {
+      closeDeskDetail();
+      state.selectedRecord = null;
+    }
     var allCb = document.getElementById("desk-archive-select-all");
     if (allCb) {
       allCb.checked = false;
@@ -1875,6 +1880,40 @@
     if (deskSaveEntry) {
       deskSaveEntry.addEventListener("click", saveDeskRecord);
     }
+
+    var archHost = document.getElementById("desk-archive-rows");
+    if (archHost) {
+      archHost.addEventListener("click", function (e) {
+        if (e.target.closest("[data-archive-no-open]")) return;
+        var row = e.target.closest(".desk-table-row");
+        if (!row || !archHost.contains(row)) return;
+        var id = row.getAttribute("data-record-id");
+        var rec = findRecordByIdDesk(id);
+        if (rec) openDeskDetail(rec);
+      });
+      archHost.addEventListener("change", function (e) {
+        if (e.target.matches("input[data-archive-select]")) {
+          updateDeskArchiveBulkUi();
+        }
+      });
+    }
+    var archSelectAll = document.getElementById("desk-archive-select-all");
+    if (archSelectAll) {
+      archSelectAll.addEventListener("change", function () {
+        var on = archSelectAll.checked;
+        var rowsHost = document.getElementById("desk-archive-rows");
+        if (!rowsHost) return;
+        rowsHost.querySelectorAll("input[data-archive-select]").forEach(function (cb) {
+          cb.checked = on;
+        });
+        updateDeskArchiveBulkUi();
+      });
+    }
+    var archDel = document.getElementById("desk-archive-delete-selected");
+    if (archDel) {
+      archDel.addEventListener("click", deleteSelectedDeskArchiveRecords);
+    }
+
     var deskLogRange = document.getElementById("desk-log-focus-range");
     if (deskLogRange) {
       deskLogRange.addEventListener("input", syncDeskLogFocusUi);
