@@ -404,7 +404,6 @@
             <span class="screen-title">New Record</span>
             <span style="width:60px"></span>
           </div>
-          <input type="file" id="mobile-photo-input" accept="image/*" class="sr-only" tabindex="-1" aria-hidden="true" />
           <div style="padding:10px 20px;display:flex;gap:4px;align-items:center">
             <div style="height:2px;flex:1;background:var(--ink)"></div>
             <div style="height:2px;flex:1;background:var(--gray1)"></div>
@@ -449,7 +448,11 @@
             <div style="flex:1;height:1px;background:var(--gray1)"></div>
           </div>
           <div style="padding:0 20px;margin-bottom:4px">
-            <button type="button" class="btn-ghost" style="padding:11px 20px" id="mobile-btn-upload"><span style="font-size:10px">Upload Photo from Library</span><span style="opacity:0.4">↑</span></button>
+            <label class="btn-ghost mobile-upload-label" style="padding:11px 20px;margin:0">
+              <input type="file" id="mobile-photo-input" accept="image/*" class="mobile-upload-label__input" aria-label="Upload photo from library" />
+              <span class="mobile-upload-label__face" style="font-size:10px">Upload Photo from Library</span>
+              <span class="mobile-upload-label__face" style="opacity:0.4">↑</span>
+            </label>
           </div>
           <div style="margin:14px 20px 0;padding:10px;border:1px solid var(--gray1);display:flex;gap:10px;align-items:center">
             <div id="mobile-capture-ref-thumb" style="width:44px;height:44px;background:var(--paper2);border:1px solid var(--gray1);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative">

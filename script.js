@@ -1005,12 +1005,6 @@
     }
 
     var photoInput = document.getElementById("mobile-photo-input");
-    var uploadBtn = document.getElementById("mobile-btn-upload");
-    if (uploadBtn && photoInput) {
-      uploadBtn.addEventListener("click", function () {
-        photoInput.click();
-      });
-    }
     if (photoInput) {
       photoInput.addEventListener("change", function (e) {
         var f = e.target.files && e.target.files[0];
