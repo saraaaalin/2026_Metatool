@@ -61,6 +61,7 @@
     draftRecordKey: null,
     showEarlierMobile: false,
     selectedRecord: null,
+    deskEntryStep: 1,
   };
 
   function seedInitialRecords() {
@@ -919,6 +920,7 @@
       still.classList.remove("hidden");
     }
     syncDeskViewfinderLayers();
+    syncDeskContinueStep1Button();
   }
 
   function captureDeskPhotoFromVideo() {
@@ -938,6 +940,7 @@
     state.uploadedImage = url;
     showDeskViewfinderStill(url);
     syncDeskRefCardFromState();
+    syncDeskContinueStep1Button();
     return true;
   }
 
@@ -1022,6 +1025,240 @@
     return "home";
   }
 
+  function syncDeskContinueStep1Button() {
+    var btn = document.getElementById("desk-btn-continue-step1");
+    if (!btn) return;
+    var has = !!state.uploadedImage;
+    btn.disabled = !has;
+  }
+
+  function updateDeskEntryStepper(n) {
+    var root = document.getElementById("desk-page-new-entry");
+    if (!root) return;
+    var items = root.querySelectorAll(".desk-step-item");
+    var lines = root.querySelectorAll(".desk-step-line");
+    items.forEach(function (item, idx) {
+      var step = idx + 1;
+      var num = item.querySelector(".desk-step-num");
+      var lbl = item.querySelector(".desk-step-label");
+      if (num) {
+        num.classList.toggle("is-current", step === n);
+        num.classList.toggle("is-complete", step < n);
+      }
+      if (lbl) {
+        lbl.classList.toggle("is-current", step === n);
+      }
+    });
+    lines.forEach(function (line, idx) {
+      line.classList.toggle("is-done", n > idx + 1);
+    });
+  }
+
+  function refreshDeskEntryProcessPanel() {
+    var img = document.getElementById("desk-process-source-thumb");
+    var canvas = document.getElementById("canvas-desk-entry-process");
+    if (img && state.uploadedImage) {
+      img.src = state.uploadedImage;
+    }
+    if (canvas && state.uploadedImage) {
+      var seed = "desk-proc-" + String(state.uploadedImage.length) + "-" + String(hashString(state.uploadedImage.slice(0, 80)));
+      drawPointCloudMetatool(canvas, seed, 130);
+    }
+  }
+
+  function syncDeskLogFocusUi() {
+    var range = document.getElementById("desk-log-focus-range");
+    var fill = document.getElementById("desk-log-focus-fill");
+    var thumb = document.getElementById("desk-log-focus-thumb");
+    var big = document.getElementById("desk-log-focus-display");
+    if (!range) return;
+    var v = Number(range.value);
+    state.focusLevel = v;
+    syncRangeVisual(range, fill, thumb, v);
+    if (big) big.innerHTML = v + "<small>%</small>";
+  }
+
+  function getDeskLogMood() {
+    var inp = document.getElementById("desk-log-mood-input");
+    if (inp && inp.value.trim()) {
+      return inp.value.trim();
+    }
+    var on = document.querySelector('[data-desk-chip-group="log-mood"] button.is-on');
+    return on ? on.textContent.trim() : state.selectedMood;
+  }
+
+  function getDeskLogLight() {
+    var on = document.querySelector('[data-desk-chip-group="log-light"] button.is-on');
+    return on ? on.textContent.trim() : state.selectedLighting;
+  }
+
+  function prepareDeskLogUi() {
+    var now = new Date();
+    var idEl = document.getElementById("desk-log-record-id-display");
+    var tEl = document.getElementById("desk-log-time-display");
+    var shortId =
+      "PAB-" +
+      now.getFullYear() +
+      "-" +
+      pad2(now.getMonth() + 1) +
+      pad2(now.getDate()) +
+      "-" +
+      String(Math.floor(Math.random() * 900) + 100);
+    if (idEl) idEl.textContent = "RECORD ID — " + shortId;
+    if (tEl) tEl.textContent = formatLogTime(now);
+    var range = document.getElementById("desk-log-focus-range");
+    if (range) {
+      range.value = String(state.focusLevel);
+      syncDeskLogFocusUi();
+    }
+    var moodInp = document.getElementById("desk-log-mood-input");
+    if (moodInp) moodInp.value = state.selectedMood;
+    document.querySelectorAll("[data-desk-log-mood]").forEach(function (b) {
+      b.classList.toggle("is-on", b.textContent.trim() === state.selectedMood);
+    });
+    document.querySelectorAll("[data-desk-log-light]").forEach(function (b) {
+      b.classList.toggle("is-on", b.textContent.trim() === state.selectedLighting);
+    });
+    var notes = document.getElementById("desk-log-notes");
+    if (notes) notes.value = "";
+  }
+
+  function syncDeskSaveSummary() {
+    var mood = getDeskLogMood();
+    var light = getDeskLogLight();
+    var idLine = document.getElementById("desk-log-record-id-display");
+    var saveId = document.getElementById("desk-save-record-id");
+    var sum = document.getElementById("desk-save-summary");
+    if (saveId && idLine) {
+      saveId.textContent = idLine.textContent.replace(/^RECORD ID —\s*/i, "").trim();
+    }
+    if (sum) {
+      sum.textContent = state.focusLevel + "% focus · " + mood + " · " + light;
+    }
+    var thumb = document.getElementById("desk-save-thumb");
+    var tfb = document.getElementById("desk-save-thumb-fallback");
+    if (state.uploadedImage && thumb && tfb) {
+      thumb.src = state.uploadedImage;
+      thumb.classList.remove("hidden");
+      tfb.classList.add("hidden");
+    } else if (thumb && tfb) {
+      thumb.classList.add("hidden");
+      tfb.classList.remove("hidden");
+    }
+  }
+
+  function setDeskEntryStep(n) {
+    if (n >= 2) {
+      stopDeskCameraTracks();
+    }
+    state.deskEntryStep = n;
+    document.querySelectorAll(".desk-entry-panel").forEach(function (el) {
+      var s = parseInt(el.getAttribute("data-desk-entry-step"), 10);
+      el.classList.toggle("is-active", s === n);
+    });
+    document.querySelectorAll(".desk-entry-sidebar-panel").forEach(function (el) {
+      var s = parseInt(el.getAttribute("data-desk-entry-step"), 10);
+      el.classList.toggle("is-active", s === n);
+    });
+    updateDeskEntryStepper(n);
+    if (n === 1) {
+      if (state.uploadedImage) {
+        showDeskViewfinderStill(state.uploadedImage);
+        syncDeskRefCardFromState();
+      } else {
+        var still = document.getElementById("desk-viewfinder-still");
+        if (still) {
+          still.classList.add("hidden");
+          still.removeAttribute("src");
+        }
+        syncDeskViewfinderLayers();
+        if (window.matchMedia("(min-width: 769px)").matches) {
+          startDeskCamera();
+        }
+      }
+      syncDeskContinueStep1Button();
+    }
+    if (n === 2) {
+      refreshDeskEntryProcessPanel();
+    }
+    if (n === 3) {
+      prepareDeskLogUi();
+    }
+    if (n === 4) {
+      syncDeskSaveSummary();
+    }
+  }
+
+  function saveDeskRecord() {
+    var notesEl = document.getElementById("desk-log-notes");
+    var idEl = document.getElementById("desk-log-record-id-display");
+    var displayId = idEl ? idEl.textContent.replace(/^RECORD ID —\s*/i, "").trim() : "PAB-NEW";
+    var now = new Date();
+    var rec = {
+      id: "rec-" + now.getTime(),
+      recordCode: String(Math.floor(Math.random() * 900) + 100),
+      displayId: displayId,
+      date: formatLogDate(now),
+      time: formatLogTime(now),
+      focus: state.focusLevel,
+      mood: getDeskLogMood(),
+      light: getDeskLogLight(),
+      objects: 4 + Math.floor(Math.random() * 3),
+      notes: notesEl ? notesEl.value : "",
+      photoDataUrl: state.uploadedImage,
+      duration: "1h 20m",
+      createdAt: now.getTime(),
+    };
+    var all = getAllRecords();
+    all.unshift(rec);
+    saveRecordsToStorage(all);
+    state.uploadedImage = null;
+    state.deskEntryStep = 1;
+    buildDeskArchiveRows();
+    updateDeskArchiveMeta();
+    buildMobileArchiveList();
+    window.location.hash = "archive";
+  }
+
+  function bindDeskLogFormChips() {
+    var logPanel = document.getElementById("desk-entry-panel-log");
+    if (!logPanel) return;
+    logPanel.addEventListener("click", function (e) {
+      var m = e.target.closest("[data-desk-log-mood]");
+      if (m) {
+        var row = m.closest("[data-desk-chip-group]");
+        if (row) {
+          row.querySelectorAll("[data-desk-log-mood]").forEach(function (b) {
+            b.classList.remove("is-on");
+          });
+        }
+        m.classList.add("is-on");
+        state.selectedMood = m.textContent.trim();
+        var inp = document.getElementById("desk-log-mood-input");
+        if (inp) inp.value = state.selectedMood;
+        return;
+      }
+      var l = e.target.closest("[data-desk-log-light]");
+      if (l) {
+        var row2 = l.closest("[data-desk-chip-group]");
+        if (row2) {
+          row2.querySelectorAll("[data-desk-log-light]").forEach(function (b) {
+            b.classList.remove("is-on");
+          });
+        }
+        l.classList.add("is-on");
+        state.selectedLighting = l.textContent.trim();
+      }
+    });
+    var moodInp = document.getElementById("desk-log-mood-input");
+    if (moodInp) {
+      moodInp.addEventListener("input", function () {
+        var v = moodInp.value.trim();
+        if (v) state.selectedMood = v;
+      });
+    }
+  }
+
   function showDeskPage(id) {
     document.querySelectorAll(".desk-page").forEach(function (el) {
       el.classList.toggle("is-active", el.getAttribute("data-desk-page") === id);
@@ -1034,12 +1271,7 @@
       if (c) drawPointCloudMetatool(c, "desk-home-hero", 200);
     }
     if (id === "new-entry") {
-      if (state.uploadedImage) {
-        showDeskViewfinderStill(state.uploadedImage);
-        syncDeskRefCardFromState();
-      } else {
-        startDeskCamera();
-      }
+      setDeskEntryStep(state.deskEntryStep || 1);
     } else {
       stopDeskCamera();
     }
@@ -1138,6 +1370,7 @@
           state.uploadedImage = reader.result;
           showDeskViewfinderStill(reader.result);
           syncDeskRefCardFromState();
+          syncDeskContinueStep1Button();
         };
         reader.readAsDataURL(f);
         e.target.value = "";
@@ -1147,12 +1380,59 @@
     if (deskTake) {
       deskTake.addEventListener("click", onDeskTakePhotoClick);
     }
+    var deskCont1 = document.getElementById("desk-btn-continue-step1");
+    if (deskCont1) {
+      deskCont1.addEventListener("click", function () {
+        if (!state.uploadedImage) return;
+        setDeskEntryStep(2);
+      });
+    }
+    var deskCont2 = document.getElementById("desk-btn-continue-step2");
+    if (deskCont2) {
+      deskCont2.addEventListener("click", function () {
+        setDeskEntryStep(3);
+      });
+    }
+    var deskBack2 = document.getElementById("desk-btn-back-step2");
+    if (deskBack2) {
+      deskBack2.addEventListener("click", function () {
+        setDeskEntryStep(1);
+      });
+    }
+    var deskCont3 = document.getElementById("desk-btn-continue-step3");
+    if (deskCont3) {
+      deskCont3.addEventListener("click", function () {
+        setDeskEntryStep(4);
+      });
+    }
+    var deskBack3 = document.getElementById("desk-btn-back-step3");
+    if (deskBack3) {
+      deskBack3.addEventListener("click", function () {
+        setDeskEntryStep(2);
+      });
+    }
+    var deskBack4 = document.getElementById("desk-btn-back-step4");
+    if (deskBack4) {
+      deskBack4.addEventListener("click", function () {
+        setDeskEntryStep(3);
+      });
+    }
+    var deskSaveEntry = document.getElementById("desk-btn-save-entry");
+    if (deskSaveEntry) {
+      deskSaveEntry.addEventListener("click", saveDeskRecord);
+    }
+    var deskLogRange = document.getElementById("desk-log-focus-range");
+    if (deskLogRange) {
+      deskLogRange.addEventListener("input", syncDeskLogFocusUi);
+    }
+    bindDeskLogFormChips();
     var deskClose = document.getElementById("desk-detail-close");
     if (deskClose) deskClose.addEventListener("click", closeDeskDetail);
     var deskRec = document.getElementById("desk-detail-recreate");
     if (deskRec) {
       deskRec.addEventListener("click", function () {
         closeDeskDetail();
+        state.deskEntryStep = 1;
         window.location.hash = "new-entry";
       });
     }

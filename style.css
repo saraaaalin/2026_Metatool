@@ -877,6 +877,12 @@ label.mobile-upload-label {
   color: var(--paper);
 }
 
+.desk-step-num.is-complete {
+  border-color: var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
 .desk-step-label {
   font-family: var(--mono);
   font-size: 9px;
@@ -918,6 +924,56 @@ label.mobile-upload-label {
 
 .desk-new__col--left {
   border-right: 1px solid var(--gray1);
+}
+
+.desk-entry-panel,
+.desk-entry-sidebar-panel {
+  display: none;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.desk-entry-panel.is-active,
+.desk-entry-sidebar-panel.is-active {
+  display: flex;
+}
+
+.desk-entry-continue:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.desk-log-text-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--gray1);
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  padding: 8px 0;
+  outline: none;
+}
+
+.desk-log-text-input::placeholder {
+  color: var(--gray2);
+}
+
+.desk-log-notes {
+  width: 100%;
+  border: 1px solid var(--gray1);
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  padding: 12px;
+  resize: vertical;
+  min-height: 88px;
+  outline: none;
+}
+
+.desk-log-notes::placeholder {
+  color: var(--gray2);
 }
 
 .desk-caption {

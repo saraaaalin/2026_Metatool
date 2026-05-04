@@ -130,60 +130,163 @@
         </div>
         <div class="desk-new__grid">
           <div class="desk-new__col desk-new__col--left">
-            <div>
-              <div class="desk-caption">Step 01 — Capture</div>
-              <p class="desk-p-sans">Frame your desk from the same angle each time for consistent spatial records.</p>
-            </div>
-            <div class="desk-viewfinder">
-              <div class="desk-viewfinder__inner">
-                <div class="desk-home__right-grid desk-viewfinder__grid" style="inset:0;position:absolute" aria-hidden="true"></div>
-                <svg class="desk-viewfinder__overlay-svg" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
-                  <line x1="33%" y1="0" x2="33%" y2="100%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
-                  <line x1="66%" y1="0" x2="66%" y2="100%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
-                  <line x1="0" y1="33%" x2="100%" y2="33%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
-                  <line x1="0" y1="66%" x2="100%" y2="66%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
-                  <path d="M16,16 L16,36 M16,16 L36,16" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
-                  <path d="M384,16 L384,36 M384,16 L364,16" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
-                  <path d="M16,264 L16,244 M16,264 L36,264" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
-                  <path d="M384,264 L384,244 M384,264 L364,264" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
-                </svg>
-                <video id="desk-camera-video" class="desk-viewfinder__video hidden" playsinline muted autoplay aria-label="Desk camera preview"></video>
-                <img id="desk-viewfinder-still" class="desk-viewfinder__still hidden" alt="" />
-                <div id="desk-camera-placeholder" class="desk-camera-placeholder">
-                  <svg width="44" height="38" viewBox="0 0 44 38" fill="none" style="opacity:0.3;display:block;margin:0 auto 10px" aria-hidden="true">
-                    <rect x="1" y="9" width="42" height="28" rx="2" stroke="#0c0c0c" stroke-width="1.5" />
-                    <path d="M15 9 L17 2 L27 2 L29 9" stroke="#0c0c0c" stroke-width="1.5" />
-                    <circle cx="22" cy="23" r="8" stroke="#0c0c0c" stroke-width="1.5" />
-                    <circle cx="22" cy="23" r="3.5" stroke="#0c0c0c" stroke-width="1" />
-                    <circle cx="35" cy="14" r="2" fill="#0c0c0c" opacity="0.5" />
+            <!-- Step 1: Capture -->
+            <div class="desk-entry-panel is-active" data-desk-entry-step="1">
+              <div>
+                <div class="desk-caption">Step 01 — Capture</div>
+                <p class="desk-p-sans">Frame your desk from the same angle each time for consistent spatial records.</p>
+              </div>
+              <div class="desk-viewfinder">
+                <div class="desk-viewfinder__inner">
+                  <div class="desk-home__right-grid desk-viewfinder__grid" style="inset:0;position:absolute" aria-hidden="true"></div>
+                  <svg class="desk-viewfinder__overlay-svg" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
+                    <line x1="33%" y1="0" x2="33%" y2="100%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
+                    <line x1="66%" y1="0" x2="66%" y2="100%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
+                    <line x1="0" y1="33%" x2="100%" y2="33%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
+                    <line x1="0" y1="66%" x2="100%" y2="66%" stroke="rgba(12,12,12,0.1)" stroke-width="0.5" />
+                    <path d="M16,16 L16,36 M16,16 L36,16" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
+                    <path d="M384,16 L384,36 M384,16 L364,16" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
+                    <path d="M16,264 L16,244 M16,264 L36,264" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
+                    <path d="M384,264 L384,244 M384,264 L364,264" stroke="rgba(12,12,12,0.4)" stroke-width="1.5" fill="none" />
                   </svg>
-                  <span id="desk-camera-status" style="font-family:var(--mono);font-size:9px;color:var(--gray3);letter-spacing:0.12em">CAMERA INACTIVE</span>
+                  <video id="desk-camera-video" class="desk-viewfinder__video hidden" playsinline muted autoplay aria-label="Desk camera preview"></video>
+                  <img id="desk-viewfinder-still" class="desk-viewfinder__still hidden" alt="" />
+                  <div id="desk-camera-placeholder" class="desk-camera-placeholder">
+                    <svg width="44" height="38" viewBox="0 0 44 38" fill="none" style="opacity:0.3;display:block;margin:0 auto 10px" aria-hidden="true">
+                      <rect x="1" y="9" width="42" height="28" rx="2" stroke="#0c0c0c" stroke-width="1.5" />
+                      <path d="M15 9 L17 2 L27 2 L29 9" stroke="#0c0c0c" stroke-width="1.5" />
+                      <circle cx="22" cy="23" r="8" stroke="#0c0c0c" stroke-width="1.5" />
+                      <circle cx="22" cy="23" r="3.5" stroke="#0c0c0c" stroke-width="1" />
+                      <circle cx="35" cy="14" r="2" fill="#0c0c0c" opacity="0.5" />
+                    </svg>
+                    <span id="desk-camera-status" style="font-family:var(--mono);font-size:9px;color:var(--gray3);letter-spacing:0.12em">CAMERA INACTIVE</span>
+                  </div>
+                </div>
+                <div class="desk-viewfinder__strip">
+                  <span>ALIGN WITH PREVIOUS RECORD</span><span>↕ LEVEL</span>
                 </div>
               </div>
-              <div class="desk-viewfinder__strip">
-                <span>ALIGN WITH PREVIOUS RECORD</span><span>↕ LEVEL</span>
+              <div class="desk-or-row"><span>OR</span></div>
+              <label class="desk-upload-btn desk-upload-label">
+                <input type="file" id="desk-photo-input" accept="image/*" class="desk-upload-label__input" aria-label="Upload photo from library" />
+                <span class="desk-upload-label__face">Upload Photo from Library</span>
+                <span class="desk-upload-label__face" style="opacity:.4">↑</span>
+              </label>
+              <div class="desk-ref-card">
+                <div class="desk-ref-thumb">
+                  <img id="desk-ref-thumb-img" alt="" class="hidden" style="width:100%;height:100%;object-fit:cover;display:block" />
+                  <svg id="desk-ref-thumb-fallback" aria-hidden="true"><use href="#desk-thumb" /></svg>
+                </div>
+                <div>
+                  <div class="desk-caption" style="margin-bottom:3px">Last capture</div>
+                  <div id="desk-ref-datetime" style="font-family:var(--mono);font-size:11px;color:var(--ink)">Mar 12, 2025 — 9:14am</div>
+                </div>
+              </div>
+              <button type="button" class="desk-take-photo" id="desk-btn-take-photo"><span>Take Desk Photo</span><span style="font-size:16px;opacity:.5">◉</span></button>
+              <button type="button" class="desk-entry-continue desk-take-photo" id="desk-btn-continue-step1" disabled><span>Continue to Spatial Processing</span><span style="opacity:.5">→</span></button>
+            </div>
+
+            <!-- Step 2: Spatial process -->
+            <div class="desk-entry-panel" data-desk-entry-step="2">
+              <div>
+                <div class="desk-caption">Step 02 — Spatial Process</div>
+                <p class="desk-p-sans">Your photo is translated into a point cloud — a spatial record of object positions on your desk.</p>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;border:1px solid var(--gray1);background:var(--gray1);max-height:320px">
+                <div style="background:var(--paper2);min-height:200px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                  <img id="desk-process-source-thumb" alt="" style="max-width:100%;max-height:280px;object-fit:contain;display:block" />
+                </div>
+                <div style="background:var(--paper);padding:8px;display:flex;align-items:center;justify-content:center">
+                  <canvas id="canvas-desk-entry-process" width="400" height="280" aria-label="Point cloud preview"></canvas>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="desk-cell-btn" id="desk-btn-back-step2">← Back</button>
+                <button type="button" class="desk-take-photo" id="desk-btn-continue-step2" style="flex:1;min-width:200px"><span>Continue to Attention Log</span><span style="opacity:.5">→</span></button>
               </div>
             </div>
-            <div class="desk-or-row"><span>OR</span></div>
-            <label class="desk-upload-btn desk-upload-label">
-              <input type="file" id="desk-photo-input" accept="image/*" class="desk-upload-label__input" aria-label="Upload photo from library" />
-              <span class="desk-upload-label__face">Upload Photo from Library</span>
-              <span class="desk-upload-label__face" style="opacity:.4">↑</span>
-            </label>
-            <div class="desk-ref-card">
-              <div class="desk-ref-thumb">
-                <img id="desk-ref-thumb-img" alt="" class="hidden" style="width:100%;height:100%;object-fit:cover;display:block" />
-                <svg id="desk-ref-thumb-fallback" aria-hidden="true"><use href="#desk-thumb" /></svg>
+
+            <!-- Step 3: Attention log -->
+            <div class="desk-entry-panel" data-desk-entry-step="3" id="desk-entry-panel-log">
+              <div>
+                <div class="desk-caption">Step 03 — Attention Log</div>
+                <p class="desk-p-sans">Rate this session’s focus, mood, and lighting. Add optional field notes.</p>
+              </div>
+              <div class="desk-recall__panel">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+                  <span class="desk-caption" style="margin:0">Focus Level</span>
+                  <span class="desk-recall__focus-big" id="desk-log-focus-display">72<small>%</small></span>
+                </div>
+                <div class="focus-slider-track focus-slider-track--interactive" style="margin-bottom:4px">
+                  <input type="range" id="desk-log-focus-range" min="0" max="100" value="72" class="slider-range-input" aria-label="Focus level" />
+                  <div class="focus-slider-fill" id="desk-log-focus-fill" style="width:72%"></div>
+                  <span class="desk-slider-thumb-dot" id="desk-log-focus-thumb" style="left:72%"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--gray3)">
+                  <span>0 — Scattered</span><span>50</span><span>100 — Deep</span>
+                </div>
               </div>
               <div>
-                <div class="desk-caption" style="margin-bottom:3px">Last capture</div>
-                <div id="desk-ref-datetime" style="font-family:var(--mono);font-size:11px;color:var(--ink)">Mar 12, 2025 — 9:14am</div>
+                <div class="desk-caption" style="margin-bottom:8px">Current Mood</div>
+                <input type="text" id="desk-log-mood-input" class="desk-log-text-input" placeholder="e.g. calm, restless…" />
+                <div class="desk-chip-row" style="margin-top:8px" data-desk-chip-group="log-mood">
+                  <button type="button" class="is-on" data-desk-log-mood>Calm</button>
+                  <button type="button" data-desk-log-mood>Focused</button>
+                  <button type="button" data-desk-log-mood>Anxious</button>
+                  <button type="button" data-desk-log-mood>Restless</button>
+                  <button type="button" data-desk-log-mood>Alert</button>
+                  <button type="button" data-desk-log-mood>Tired</button>
+                </div>
+              </div>
+              <div>
+                <div class="desk-caption" style="margin-bottom:8px">Lighting Condition</div>
+                <div class="desk-chip-row" data-desk-chip-group="log-light">
+                  <button type="button" data-desk-log-light>Bright</button>
+                  <button type="button" class="is-on" data-desk-log-light>Soft</button>
+                  <button type="button" data-desk-log-light>Dim</button>
+                  <button type="button" data-desk-log-light>Direct Sun</button>
+                  <button type="button" data-desk-log-light>Artificial</button>
+                </div>
+              </div>
+              <div>
+                <div class="desk-caption" style="margin-bottom:8px">Field Notes</div>
+                <textarea id="desk-log-notes" class="desk-log-notes" rows="4" placeholder="Observations about this session…"></textarea>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:9px;color:var(--gray3)">
+                <span id="desk-log-record-id-display">RECORD ID — …</span>
+                <span id="desk-log-time-display">—</span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="desk-cell-btn" id="desk-btn-back-step3">← Back</button>
+                <button type="button" class="desk-take-photo" id="desk-btn-continue-step3" style="flex:1;min-width:200px"><span>Continue to Save</span><span style="opacity:.5">→</span></button>
               </div>
             </div>
-            <button type="button" class="desk-take-photo" id="desk-btn-take-photo"><span>Take Desk Photo</span><span style="font-size:16px;opacity:.5">◉</span></button>
+
+            <!-- Step 4: Save -->
+            <div class="desk-entry-panel" data-desk-entry-step="4">
+              <div>
+                <div class="desk-caption">Step 04 — Save</div>
+                <p class="desk-p-sans">Review and save this record to your local archive.</p>
+              </div>
+              <div class="desk-ref-card" style="max-width:100%">
+                <div class="desk-ref-thumb" style="width:72px;height:72px">
+                  <img id="desk-save-thumb" alt="" class="hidden" style="width:100%;height:100%;object-fit:cover" />
+                  <svg id="desk-save-thumb-fallback" aria-hidden="true"><use href="#desk-thumb" /></svg>
+                </div>
+                <div style="flex:1;font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--gray3)">
+                  <div><strong style="color:var(--ink)" id="desk-save-record-id">—</strong></div>
+                  <div id="desk-save-summary">Focus — · Mood — · Light —</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="desk-cell-btn" id="desk-btn-back-step4">← Back</button>
+                <button type="button" class="desk-take-photo" id="desk-btn-save-entry" style="flex:1;min-width:200px"><span>Save Record</span><span style="opacity:.5">→</span></button>
+              </div>
+            </div>
           </div>
-          <div class="desk-new__col">
-            <div>
+
+          <div class="desk-new__col desk-entry-sidebar">
+            <div class="desk-entry-sidebar-panel is-active" data-desk-entry-step="1">
               <div class="desk-next-h">What happens next</div>
               <div>
                 <div class="desk-next-row">
@@ -208,14 +311,47 @@
                   </div>
                 </div>
               </div>
+              <div class="desk-guidance">
+                <h4>Capture Guidance</h4>
+                <div class="desk-guidance-grid">
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Bird's-eye view preferred</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Even lighting, avoid glare</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Include full desk surface</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Consistent framing each time</span></div>
+                </div>
+              </div>
             </div>
-            <div class="desk-guidance">
-              <h4>Capture Guidance</h4>
-              <div class="desk-guidance-grid">
-                <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Bird's-eye view preferred</span></div>
-                <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Even lighting, avoid glare</span></div>
-                <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Include full desk surface</span></div>
-                <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Consistent framing each time</span></div>
+            <div class="desk-entry-sidebar-panel" data-desk-entry-step="2">
+              <div class="desk-next-h">Spatial processing</div>
+              <p class="desk-p-sans">The point cloud approximates object density from your still. It is used as a visual fingerprint for this session alongside your attention log.</p>
+              <div class="desk-guidance" style="margin-top:8px">
+                <h4>Tip</h4>
+                <div class="desk-guidance-grid">
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Clear desk photos produce cleaner maps</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Keep the same camera height each time</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desk-entry-sidebar-panel" data-desk-entry-step="3">
+              <div class="desk-next-h">Attention log</div>
+              <p class="desk-p-sans">Be honest about focus and environment — Recall Mode will match against these values later.</p>
+              <div class="desk-guidance" style="margin-top:8px">
+                <h4>Tip</h4>
+                <div class="desk-guidance-grid">
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Mood chips sync with the text field</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Notes are optional but help future you</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desk-entry-sidebar-panel" data-desk-entry-step="4">
+              <div class="desk-next-h">Save locally</div>
+              <p class="desk-p-sans">Records live in your browser (localStorage). They appear in Archive and can be matched in Recall Mode.</p>
+              <div class="desk-guidance" style="margin-top:8px">
+                <h4>After saving</h4>
+                <div class="desk-guidance-grid">
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Open Archive to see your new row</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Use Recall to find similar focus levels</span></div>
+                </div>
               </div>
             </div>
           </div>
