@@ -192,18 +192,18 @@
                 <div class="desk-caption">Step 02 — Spatial Process</div>
                 <p class="desk-p-sans">Your photo is translated into a point cloud — a spatial record of object positions on your desk.</p>
               </div>
-              <div class="desk-spatial-split" aria-label="Source photo and point cloud">
-                <div class="desk-spatial-split__source">
-                  <span class="desk-spatial-split__label">Source capture — reference</span>
-                  <div class="desk-spatial-split__source-inner">
-                    <img id="desk-process-source-thumb" class="desk-spatial-split__img hidden" alt="Uploaded desk photo" />
-                    <p id="desk-process-source-empty" class="desk-spatial-split__empty">No photo loaded — go back to Step 01 to capture or upload.</p>
+              <div class="desk-spatial-stack" aria-label="Spatial record and source photo">
+                <div class="desk-spatial-stack__cloud">
+                  <span class="desk-spatial-stack__label">Spatial record</span>
+                  <div class="desk-spatial-stack__canvas-wrap">
+                    <canvas id="canvas-desk-entry-process" width="400" height="280" aria-label="Point cloud preview"></canvas>
                   </div>
                 </div>
-                <div class="desk-spatial-split__cloud">
-                  <span class="desk-spatial-split__label">Spatial record</span>
-                  <div class="desk-spatial-split__canvas-wrap">
-                    <canvas id="canvas-desk-entry-process" width="400" height="280" aria-label="Point cloud preview"></canvas>
+                <div class="desk-spatial-stack__source">
+                  <span class="desk-spatial-stack__label">Source capture — reference</span>
+                  <div class="desk-spatial-stack__source-inner">
+                    <img id="desk-process-source-thumb" class="desk-spatial-stack__img hidden" alt="Uploaded desk photo" />
+                    <p id="desk-process-source-empty" class="desk-spatial-stack__empty">No photo loaded — go back to Step 01 to capture or upload.</p>
                   </div>
                 </div>
               </div>
