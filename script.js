@@ -1,9 +1,11 @@
 /**
- * Portable Attention Box — dual-shell navigation (desktop ≥769px, mobile ≤768px)
- * Point clouds + halftone rendered to match Claude Design references.
+ * Portable Attention Box — dual-shell navigation + local prototype state
+ * Desktop ≥769px · Mobile ≤768px
  */
 (function () {
   "use strict";
+
+  var STORAGE_KEY = "pab_records_v1";
 
   var DESKTOP_RECORDS = [
     { id: "041", date: "Apr 12, 2025", time: "9:41am", focus: 72, mood: "Calm", light: "Soft", objects: 5 },
@@ -14,29 +16,130 @@
     { id: "036", date: "Apr 3, 2025", time: "11:20am", focus: 55, mood: "Tired", light: "Dim", objects: 3 },
   ];
 
-  var MOBILE_ARCHIVE_RECORDS = [
-    { id: "041", date: "Apr 12, 2025", time: "9:41am", focus: 72, mood: "Calm", light: "Soft" },
-    { id: "040", date: "Apr 11, 2025", time: "8:15am", focus: 88, mood: "Focused", light: "Bright" },
-    { id: "039", date: "Apr 9, 2025", time: "2:02pm", focus: 45, mood: "Restless", light: "Artificial" },
-    { id: "038", date: "Apr 7, 2025", time: "10:30am", focus: 61, mood: "Alert", light: "Soft" },
+  var EARLIER_MOCKS = [
+    {
+      id: "earlier-a",
+      recordCode: "035",
+      displayId: "PAB-2025-0328-035",
+      date: "Mar 28, 2025",
+      time: "4:12pm",
+      focus: 52,
+      mood: "Calm",
+      light: "Dim",
+      objects: 4,
+      notes: "Earlier imported record (mock).",
+      photoDataUrl: null,
+      duration: "1h 05m",
+      createdAt: 0,
+    },
+    {
+      id: "earlier-b",
+      recordCode: "034",
+      displayId: "PAB-2025-0315-034",
+      date: "Mar 15, 2025",
+      time: "11:30am",
+      focus: 67,
+      mood: "Focused",
+      light: "Soft",
+      objects: 5,
+      notes: "Earlier imported record (mock).",
+      photoDataUrl: null,
+      duration: "3h 10m",
+      createdAt: 0,
+    },
   ];
 
-  var RECALL_RESULTS = [
-    { date: "Apr 11", focus: 88, mood: "Focused", light: "Bright", match: 97, best: true },
-    { date: "Apr 7", focus: 82, mood: "Alert", light: "Soft", match: 91, best: false },
-    { date: "Mar 30", focus: 79, mood: "Calm", light: "Bright", match: 84, best: false },
-    { date: "Mar 18", focus: 85, mood: "Focused", light: "Bright", match: 78, best: false },
-  ];
+  var state = {
+    mobileStack: [],
+    uploadedImage: null,
+    focusLevel: 72,
+    selectedMood: "Calm",
+    selectedLighting: "Soft",
+    recallMood: "Any",
+    draftRecordKey: null,
+    showEarlierMobile: false,
+    selectedRecord: null,
+  };
 
-  var MOBILE_RECALL = [
-    { date: "Apr 11", focus: 88, mood: "Focused", light: "Bright", match: 97 },
-    { date: "Apr 7", focus: 82, mood: "Alert", light: "Soft", match: 91 },
-    { date: "Mar 30", focus: 79, mood: "Calm", light: "Bright", match: 84 },
-  ];
+  function seedInitialRecords() {
+    var now = Date.now();
+    return DESKTOP_RECORDS.map(function (r, idx) {
+      return {
+        id: "seed-" + r.id,
+        recordCode: r.id,
+        displayId: "PAB-2025-0" + r.id,
+        date: r.date,
+        time: r.time,
+        focus: r.focus,
+        mood: r.mood,
+        light: r.light,
+        objects: r.objects != null ? r.objects : 5,
+        notes:
+          "Morning session. " + r.mood + " mood, " + r.light + " light — logged as record " + r.id + ".",
+        photoDataUrl: null,
+        duration: "2h 14m",
+        createdAt: now - idx * 86400000,
+      };
+    });
+  }
+
+  function loadRecordsFromStorage() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        var initial = seedInitialRecords();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+        return initial;
+      }
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : seedInitialRecords();
+    } catch (e) {
+      return seedInitialRecords();
+    }
+  }
+
+  function saveRecordsToStorage(arr) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  }
+
+  function getAllRecords() {
+    return loadRecordsFromStorage();
+  }
+
+  function getRecordsForDisplayMobile() {
+    var base = getAllRecords().slice();
+    base.sort(function (a, b) {
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+    return state.showEarlierMobile ? base.concat(EARLIER_MOCKS) : base;
+  }
+
+  function findRecordById(id) {
+    var pool = getRecordsForDisplayMobile();
+    var i;
+    for (i = 0; i < pool.length; i += 1) {
+      if (pool[i].id === id) return pool[i];
+    }
+    var desk = getAllRecords();
+    for (i = 0; i < desk.length; i += 1) {
+      if (desk[i].id === id) return desk[i];
+    }
+    return null;
+  }
+
+  function findRecordByIdDesk(id) {
+    var all = getAllRecords();
+    var i;
+    for (i = 0; i < all.length; i += 1) {
+      if (all[i].id === id) return all[i];
+    }
+    return null;
+  }
 
   function hashString(str) {
     var h = 2166136261 >>> 0;
-    for (var i = 0; i < str.length; i += 1) {
+    var i;
+    for (i = 0; i < str.length; i += 1) {
       h ^= str.charCodeAt(i);
       h = Math.imul(h, 16777619);
     }
@@ -52,7 +155,6 @@
     };
   }
 
-  /** Metatool Website.html PointCloud */
   function drawPointCloudMetatool(canvas, seed, density) {
     var w = canvas.width;
     var h = canvas.height;
@@ -129,7 +231,6 @@
     });
   }
 
-  /** Portable Attention Box.html PointCloud */
   function drawPointCloudPortable(canvas, seed, density) {
     var w = canvas.width;
     var h = canvas.height;
@@ -239,20 +340,109 @@
     container.appendChild(svg);
   }
 
+  function syncRangeVisual(range, fillEl, thumbEl, pct) {
+    var v = pct != null ? Number(pct) : Number(range.value);
+    var p = Math.max(0, Math.min(100, v));
+    if (fillEl) fillEl.style.width = p + "%";
+    if (thumbEl) thumbEl.style.left = p + "%";
+  }
+
+  function getDeskRecallMoodFilter() {
+    var g = document.querySelector('[data-desk-chip-group="recall-mood"]');
+    var on = g && g.querySelector("button.is-on");
+    return on ? on.textContent.trim() : "Any";
+  }
+
+  function getDeskRecallLightFilter() {
+    var g = document.querySelector('[data-desk-chip-group="recall-light"]');
+    var on = g && g.querySelector("button.is-on");
+    return on ? on.textContent.trim() : "Bright";
+  }
+
+  function computeDeskMatches() {
+    var range = document.getElementById("desk-recall-focus-range");
+    var target = range ? Number(range.value) : 85;
+    var moodF = getDeskRecallMoodFilter();
+    var lightF = getDeskRecallLightFilter();
+    var all = getAllRecords();
+    var scored = all.map(function (r) {
+      var pen = Math.abs(r.focus - target) * 1.15;
+      if (moodF !== "Any" && r.mood !== moodF) pen += 22;
+      if (r.light !== lightF) pen += 14;
+      var match = Math.max(0, Math.min(100, Math.round(100 - pen)));
+      return { record: r, match: match, dist: Math.abs(r.focus - target) };
+    });
+    scored.sort(function (a, b) {
+      return b.match - a.match || a.dist - b.dist;
+    });
+    var top = scored.slice(0, 8);
+    var j;
+    for (j = 0; j < top.length; j += 1) {
+      top[j].best = j === 0;
+    }
+    return top;
+  }
+
+  function computeMobileMatches() {
+    var range = document.getElementById("mobile-recall-focus-range");
+    var target = range ? Number(range.value) : 85;
+    var moodF = state.recallMood || "Any";
+    var all = getAllRecords();
+    var scored = all.map(function (r) {
+      var pen = Math.abs(r.focus - target) * 1.05;
+      if (moodF !== "Any" && r.mood !== moodF) pen += 18;
+      var match = Math.max(0, Math.min(100, Math.round(100 - pen)));
+      return { record: r, match: match, dist: Math.abs(r.focus - target) };
+    });
+    scored.sort(function (a, b) {
+      return b.match - a.match || a.dist - b.dist;
+    });
+    var top = scored.slice(0, 8);
+    var j;
+    for (j = 0; j < top.length; j += 1) {
+      top[j].best = j === 0;
+    }
+    return top;
+  }
+
+  function updateDeskArchiveMeta() {
+    var rows = getAllRecords();
+    var n = rows.length;
+    var avg = n ? Math.round(rows.reduce(function (s, r) {
+      return s + r.focus;
+    }, 0) / n) : 0;
+    var c = document.getElementById("desk-archive-count");
+    var a = document.getElementById("desk-archive-avg-focus");
+    if (c) c.textContent = String(n);
+    if (a) a.textContent = String(avg);
+  }
+
   function buildDeskArchiveRows() {
     var host = document.getElementById("desk-archive-rows");
     if (!host) return;
     host.innerHTML = "";
-    DESKTOP_RECORDS.forEach(function (r, idx) {
+    var list = getAllRecords().slice();
+    list.sort(function (a, b) {
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+    list.forEach(function (r, idx) {
       var row = document.createElement("div");
       row.className = "desk-table-row";
+      row.setAttribute("data-record-id", r.id);
+      var photoCell = r.photoDataUrl
+        ? '<div class="desk-thumb-cell"><img src="' +
+          r.photoDataUrl +
+          '" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>'
+        : '<div class="desk-thumb-cell"><svg viewBox="0 0 60 52" width="60" height="52"><use href="#desk-thumb" /></svg></div>';
       row.innerHTML =
-        '<div class="desk-thumb-cell"><svg viewBox="0 0 60 52" width="60" height="52"><use href="#desk-thumb" /></svg></div>' +
+        photoCell +
         '<div class="desk-thumb-cell"><canvas width="60" height="52" data-pc-m="desk-arch-' +
         idx +
-        '" data-den="28"></canvas></div>' +
-        '<div><div class="desk-table-mini">PAB-2025-0' +
+        "-" +
         r.id +
+        '" data-den="28"></canvas></div>' +
+        '<div><div class="desk-table-mini">' +
+        r.displayId +
         '</div><div class="desk-table-mini"><small>' +
         r.objects +
         " objects detected</small></div></div>" +
@@ -278,19 +468,35 @@
       var den = parseInt(cv.getAttribute("data-den"), 10) || 28;
       drawPointCloudMetatool(cv, cv.getAttribute("data-pc-m"), den);
     });
+
+    host.onclick = function (e) {
+      var row = e.target.closest(".desk-table-row");
+      if (!row || !host.contains(row)) return;
+      var id = row.getAttribute("data-record-id");
+      var rec = findRecordByIdDesk(id);
+      if (rec) openDeskDetail(rec);
+    };
+
+    updateDeskArchiveMeta();
   }
 
-  function buildDeskRecallResults() {
+  function buildDeskRecallResults(matches) {
     var host = document.getElementById("desk-recall-results");
     if (!host) return;
     host.innerHTML = "";
-    RECALL_RESULTS.forEach(function (r, i) {
+    var countEl = document.getElementById("desk-recall-result-count");
+    if (countEl) countEl.textContent = matches.length ? String(matches.length) + " " : "0 ";
+    matches.forEach(function (row, i) {
+      var r = row.record;
       var card = document.createElement("div");
-      card.className = "desk-result-card" + (r.best ? " is-best" : "");
+      card.className = "desk-result-card" + (row.best ? " is-best" : "");
+      card.setAttribute("data-record-id", r.id);
       card.innerHTML =
         '<div class="desk-thumb-cell" style="width:72px;height:60px"><svg viewBox="0 0 60 52" width="72" height="60"><use href="#desk-thumb" /></svg></div>' +
         '<div class="desk-thumb-cell" style="width:72px;height:60px;background:var(--paper2)"><canvas width="72" height="60" data-pc-m="desk-rec-' +
         i +
+        "-" +
+        r.id +
         '" data-den="32"></canvas></div>' +
         "<div>" +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
@@ -299,7 +505,7 @@
         " — " +
         r.focus +
         "% focus</span>" +
-        (r.best ? '<span class="desk-badge">Best match</span>' : "") +
+        (row.best ? '<span class="desk-badge">Best match</span>' : "") +
         "</div>" +
         '<div style="font-family:var(--mono);font-size:9px;color:var(--gray3);letter-spacing:0.06em;margin-bottom:8px">' +
         r.mood +
@@ -309,10 +515,10 @@
         '<div style="display:flex;align-items:center;gap:8px">' +
         '<div style="flex:1;height:2px;background:var(--gray1);position:relative">' +
         '<div style="position:absolute;left:0;top:0;height:100%;width:' +
-        r.match +
+        row.match +
         '%;background:var(--ink)"></div></div>' +
         '<span style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--ink);white-space:nowrap">' +
-        r.match +
+        row.match +
         "% match</span></div></div>" +
         '<div class="desk-result-actions"><button type="button">Recreate →</button></div>';
       host.appendChild(card);
@@ -321,19 +527,48 @@
       var den = parseInt(cv.getAttribute("data-den"), 10) || 32;
       drawPointCloudMetatool(cv, cv.getAttribute("data-pc-m"), den);
     });
+
+    host.onclick = function (e) {
+      var card = e.target.closest(".desk-result-card");
+      if (!card || !host.contains(card)) return;
+      if (e.target.closest(".desk-result-actions")) {
+        e.stopPropagation();
+        window.location.hash = "new-entry";
+        return;
+      }
+      var id = card.getAttribute("data-record-id");
+      var rec = findRecordByIdDesk(id);
+      if (rec) openDeskDetail(rec);
+    };
+  }
+
+  function findDeskMatchesAndRender() {
+    buildDeskRecallResults(computeDeskMatches());
   }
 
   function buildMobileArchiveList() {
     var host = document.getElementById("mobile-archive-list");
     if (!host) return;
     host.innerHTML = "";
-    MOBILE_ARCHIVE_RECORDS.forEach(function (r, i) {
+    var records = getRecordsForDisplayMobile();
+    var countEl = document.getElementById("mobile-archive-count");
+    if (countEl) countEl.textContent = String(records.length);
+    records.forEach(function (r, i) {
       var card = document.createElement("article");
       card.className = "archive-card";
+      card.setAttribute("data-record-id", r.id);
+      var thumbL =
+        r.photoDataUrl != null
+          ? '<div class="thumb-box"><img src="' +
+            r.photoDataUrl +
+            '" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>'
+          : '<div class="thumb-box"><svg viewBox="0 0 174 200" width="56" height="56"><use href="#desk-photo-svg" /></svg></div>';
       card.innerHTML =
-        '<div class="thumb-box"><svg viewBox="0 0 174 200" width="56" height="56"><use href="#desk-photo-svg" /></svg></div>' +
+        thumbL +
         '<div class="thumb-box"><canvas width="56" height="56" data-pc-p="m-arch-' +
         i +
+        "-" +
+        r.id +
         '" data-den="40"></canvas></div>' +
         '<div class="archive-meta">' +
         '<div class="date">' +
@@ -348,6 +583,10 @@
         r.light +
         "</div></div>";
       host.appendChild(card);
+      card.addEventListener("click", function () {
+        state.selectedRecord = r;
+        navigateMobileForward("detail");
+      });
     });
     host.querySelectorAll("canvas[data-pc-p]").forEach(function (cv) {
       var den = parseInt(cv.getAttribute("data-den"), 10) || 40;
@@ -355,18 +594,28 @@
     });
   }
 
-  function buildMobileRecallList() {
+  function buildMobileRecallList(matches) {
     var host = document.getElementById("mobile-recall-list");
     if (!host) return;
     host.innerHTML = "";
-    MOBILE_RECALL.forEach(function (r, i) {
+    var countEl = document.getElementById("mobile-recall-count");
+    if (!matches || !matches.length) {
+      if (countEl) countEl.textContent = "0";
+      return;
+    }
+    if (countEl) countEl.textContent = String(matches.length);
+    matches.forEach(function (row, i) {
+      var r = row.record;
       var el = document.createElement("div");
       el.className = "recall-card";
+      el.setAttribute("data-record-id", r.id);
       el.innerHTML =
         '<div style="display:grid;grid-template-columns:48px 48px 1fr;gap:10px;align-items:start">' +
         '<div class="thumb-box" style="width:48px;height:48px"><svg viewBox="0 0 174 200" width="48" height="48"><use href="#desk-photo-svg" /></svg></div>' +
         '<div class="thumb-box" style="width:48px;height:48px"><canvas width="48" height="48" data-pc-p="m-rec-' +
         i +
+        "-" +
+        r.id +
         '" data-den="30"></canvas></div>' +
         "<div>" +
         '<div style="font-size:10px;font-weight:500;color:var(--ink);margin-bottom:2px">' +
@@ -382,17 +631,249 @@
         '<div style="display:flex;align-items:center;gap:6px">' +
         '<div class="recall-match-bar" style="flex:1">' +
         '<div class="recall-match-fill" style="width:' +
-        r.match +
+        row.match +
         '%"></div></div>' +
         '<span style="font-size:8px;font-weight:500;letter-spacing:0.08em;white-space:nowrap">' +
-        r.match +
+        row.match +
         "% match</span></div></div></div>";
       host.appendChild(el);
+      el.addEventListener("click", function () {
+        state.selectedRecord = r;
+        navigateMobileForward("detail");
+      });
     });
     host.querySelectorAll("canvas[data-pc-p]").forEach(function (cv) {
       var den = parseInt(cv.getAttribute("data-den"), 10) || 30;
       drawPointCloudPortable(cv, cv.getAttribute("data-pc-p"), den);
     });
+  }
+
+  function openDeskDetail(rec) {
+    if (!rec) return;
+    state.selectedRecord = rec;
+    var ov = document.getElementById("desk-detail-overlay");
+    if (!ov) return;
+    var code = document.getElementById("desk-detail-code");
+    var head = document.getElementById("desk-detail-heading");
+    var notes = document.getElementById("desk-detail-notes");
+    var img = document.getElementById("desk-detail-photo");
+    var fb = document.getElementById("desk-detail-photo-fallback");
+    if (code) code.textContent = rec.displayId || rec.recordCode;
+    if (head) head.textContent = rec.date + " — " + rec.time;
+    if (notes) notes.textContent = rec.notes || "";
+    if (rec.photoDataUrl && img && fb) {
+      img.src = rec.photoDataUrl;
+      img.classList.remove("hidden");
+      fb.classList.add("hidden");
+    } else if (img && fb) {
+      img.classList.add("hidden");
+      fb.classList.remove("hidden");
+    }
+    var sf = document.getElementById("desk-detail-stat-focus");
+    var sm = document.getElementById("desk-detail-stat-mood");
+    var sl = document.getElementById("desk-detail-stat-light");
+    var so = document.getElementById("desk-detail-stat-objects");
+    if (sf) sf.textContent = rec.focus + "%";
+    if (sm) sm.textContent = rec.mood;
+    if (sl) sl.textContent = rec.light;
+    if (so) so.textContent = String(rec.objects != null ? rec.objects : "—");
+    var cv = document.getElementById("canvas-desk-detail-pc");
+    if (cv) drawPointCloudMetatool(cv, "desk-detail-" + rec.id, 72);
+    ov.classList.add("is-open");
+    ov.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDeskDetail() {
+    var ov = document.getElementById("desk-detail-overlay");
+    if (!ov) return;
+    ov.classList.remove("is-open");
+    ov.setAttribute("aria-hidden", "true");
+  }
+
+  function populateMobileDetail(rec) {
+    if (!rec) return;
+    var code = document.getElementById("mobile-detail-record-code");
+    var dt = document.getElementById("mobile-detail-datetime");
+    var badge = document.getElementById("mobile-detail-focus-badge");
+    var img = document.getElementById("mobile-detail-photo");
+    var fb = document.getElementById("mobile-detail-photo-fallback");
+    if (code) code.textContent = rec.displayId || "PAB-2025-0" + rec.recordCode;
+    if (dt) dt.textContent = rec.date + " — " + rec.time;
+    if (badge) badge.textContent = rec.focus + "% focus";
+    if (rec.photoDataUrl && img && fb) {
+      img.src = rec.photoDataUrl;
+      img.classList.remove("hidden");
+      fb.classList.add("hidden");
+    } else if (img && fb) {
+      img.classList.add("hidden");
+      fb.classList.remove("hidden");
+    }
+    var sf = document.getElementById("mobile-detail-stat-focus");
+    var sm = document.getElementById("mobile-detail-stat-mood");
+    var sl = document.getElementById("mobile-detail-stat-light");
+    var sd = document.getElementById("mobile-detail-stat-duration");
+    var notes = document.getElementById("mobile-detail-notes");
+    var fl = document.getElementById("mobile-detail-focus-pct-label");
+    var bar = document.getElementById("mobile-detail-focus-bar");
+    if (sf) sf.textContent = rec.focus + "%";
+    if (sm) sm.textContent = rec.mood;
+    if (sl) sl.textContent = rec.light;
+    if (sd) sd.textContent = rec.duration || "—";
+    if (notes) notes.textContent = rec.notes || "";
+    if (fl) fl.textContent = rec.focus + "%";
+    if (bar) bar.style.width = rec.focus + "%";
+    var dc = document.getElementById("canvas-mobile-detail-pc");
+    if (dc) drawPointCloudPortable(dc, "mobile-detail-" + rec.id, 85);
+  }
+
+  function syncCaptureThumb() {
+    var img = document.getElementById("mobile-capture-ref-img");
+    var fb = document.getElementById("mobile-capture-ref-fallback");
+    if (!img || !fb) return;
+    if (state.uploadedImage) {
+      img.src = state.uploadedImage;
+      img.classList.remove("hidden");
+      fb.classList.add("hidden");
+    } else {
+      img.classList.add("hidden");
+      fb.classList.remove("hidden");
+    }
+  }
+
+  function syncProcessingPhoto() {
+    var img = document.getElementById("mobile-proc-photo-img");
+    var ph = document.getElementById("mobile-proc-photo-placeholder");
+    if (!img || !ph) return;
+    if (state.uploadedImage) {
+      img.src = state.uploadedImage;
+      img.classList.remove("hidden");
+      ph.classList.add("hidden");
+    } else {
+      img.classList.add("hidden");
+      ph.classList.remove("hidden");
+    }
+  }
+
+  function syncLogFocusUi() {
+    var range = document.getElementById("mobile-log-focus-range");
+    var fill = document.getElementById("mobile-log-focus-fill");
+    var thumb = document.getElementById("mobile-log-focus-thumb");
+    var num = document.getElementById("mobile-log-focus-num");
+    if (!range) return;
+    var v = Number(range.value);
+    state.focusLevel = v;
+    syncRangeVisual(range, fill, thumb, v);
+    if (num) num.textContent = String(v);
+  }
+
+  function syncRecallFocusUi() {
+    var range = document.getElementById("mobile-recall-focus-range");
+    var fill = document.getElementById("mobile-recall-focus-fill");
+    var thumb = document.getElementById("mobile-recall-focus-thumb");
+    var num = document.getElementById("mobile-recall-focus-num");
+    if (!range) return;
+    var v = Number(range.value);
+    syncRangeVisual(range, fill, thumb, v);
+    if (num) num.textContent = String(v);
+  }
+
+  function syncDeskRecallFocusUi() {
+    var range = document.getElementById("desk-recall-focus-range");
+    var fill = document.getElementById("desk-recall-focus-fill");
+    var thumb = document.getElementById("desk-recall-focus-thumb");
+    var big = document.getElementById("desk-recall-focus-display");
+    if (!range) return;
+    var v = Number(range.value);
+    syncRangeVisual(range, fill, thumb, v);
+    if (big) big.innerHTML = v + "<small>%</small>";
+  }
+
+  function prepareDraftLogUi() {
+    var now = new Date();
+    var idEl = document.getElementById("mobile-log-record-id");
+    var tEl = document.getElementById("mobile-log-time");
+    var shortId =
+      "PAB-" +
+      now.getFullYear() +
+      "-" +
+      pad2(now.getMonth() + 1) +
+      pad2(now.getDate()) +
+      "-" +
+      String(Math.floor(Math.random() * 900) + 100);
+    if (idEl) idEl.textContent = "RECORD ID — " + shortId;
+    if (tEl) {
+      tEl.textContent = formatLogTime(now);
+    }
+    var range = document.getElementById("mobile-log-focus-range");
+    if (range) {
+      range.value = String(state.focusLevel);
+      syncLogFocusUi();
+    }
+  }
+
+  function pad2(n) {
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  function formatLogDate(now) {
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return months[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
+  }
+
+  function formatLogTime(now) {
+    var h = now.getHours();
+    var m = now.getMinutes();
+    var am = h < 12;
+    var h12 = h % 12 || 12;
+    return h12 + ":" + pad2(m) + (am ? "am" : "pm");
+  }
+
+  function saveMobileRecord() {
+    var notesEl = document.getElementById("mobile-log-notes");
+    var idLine = document.getElementById("mobile-log-record-id");
+    var now = new Date();
+    var displayId = idLine ? idLine.textContent.replace(/^RECORD ID —\s*/i, "").trim() : "PAB-NEW";
+    var rec = {
+      id: "rec-" + now.getTime(),
+      recordCode: String(Math.floor(Math.random() * 900) + 100),
+      displayId: displayId,
+      date: formatLogDate(now),
+      time: formatLogTime(now),
+      focus: state.focusLevel,
+      mood: state.selectedMood,
+      light: state.selectedLighting,
+      objects: 4 + Math.floor(Math.random() * 3),
+      notes: notesEl ? notesEl.value : "",
+      photoDataUrl: state.uploadedImage,
+      duration: "1h 20m",
+      createdAt: now.getTime(),
+    };
+    var all = getAllRecords();
+    all.unshift(rec);
+    saveRecordsToStorage(all);
+    state.uploadedImage = null;
+    state.mobileStack = [];
+    buildDeskArchiveRows();
+    updateDeskArchiveMeta();
+    buildMobileArchiveList();
+    showMobileScreen("archive");
+  }
+
+  function getActiveMobileScreen() {
+    var el = document.querySelector(".mobile-screen.is-active");
+    return el ? el.getAttribute("data-mobile-screen") : "landing";
+  }
+
+  function navigateMobileForward(next) {
+    var cur = getActiveMobileScreen();
+    if (cur && cur !== next) state.mobileStack.push(cur);
+    showMobileScreen(next);
+  }
+
+  function navigateMobileBack() {
+    var prev = state.mobileStack.pop();
+    if (prev) showMobileScreen(prev);
+    else showMobileScreen("landing");
   }
 
   function getDeskSectionFromHash() {
@@ -412,6 +893,9 @@
       var c = document.getElementById("canvas-desk-home-cloud");
       if (c) drawPointCloudMetatool(c, "desk-home-hero", 200);
     }
+    if (id === "recall") {
+      findDeskMatchesAndRender();
+    }
   }
 
   function showMobileScreen(name) {
@@ -428,10 +912,19 @@
     if (name === "processing") {
       var pc = document.getElementById("canvas-mobile-proc-pc");
       if (pc) drawPointCloudPortable(pc, "mobile-proc", 90);
+      syncProcessingPhoto();
     }
-    if (name === "detail") {
-      var dc = document.getElementById("canvas-mobile-detail-pc");
-      if (dc) drawPointCloudPortable(dc, "mobile-detail", 85);
+    if (name === "log") {
+      prepareDraftLogUi();
+    }
+    if (name === "archive") {
+      buildMobileArchiveList();
+    }
+    if (name === "detail" && state.selectedRecord) {
+      populateMobileDetail(state.selectedRecord);
+    }
+    if (name === "capture") {
+      syncCaptureThumb();
     }
   }
 
@@ -441,13 +934,200 @@
     }
   }
 
+  function bindDeskRecallChips() {
+    document.querySelectorAll("[data-desk-recall-mood]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var row = btn.closest("[data-desk-chip-group]");
+        if (!row) return;
+        row.querySelectorAll("[data-desk-recall-mood]").forEach(function (b) {
+          b.classList.remove("is-on");
+        });
+        btn.classList.add("is-on");
+      });
+    });
+    document.querySelectorAll("[data-desk-recall-light]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var row = btn.closest("[data-desk-chip-group]");
+        if (!row) return;
+        row.querySelectorAll("[data-desk-recall-light]").forEach(function (b) {
+          b.classList.remove("is-on");
+        });
+        btn.classList.add("is-on");
+      });
+    });
+  }
+
   function init() {
     renderHalftone(document.getElementById("mobile-halftone"), 390, 844);
+    loadRecordsFromStorage();
 
     buildDeskArchiveRows();
-    buildDeskRecallResults();
+    findDeskMatchesAndRender();
     buildMobileArchiveList();
-    buildMobileRecallList();
+    buildMobileRecallList(computeMobileMatches());
+
+    bindDeskRecallChips();
+
+    var deskRange = document.getElementById("desk-recall-focus-range");
+    if (deskRange) {
+      deskRange.addEventListener("input", syncDeskRecallFocusUi);
+      syncDeskRecallFocusUi();
+    }
+    var deskFind = document.getElementById("desk-btn-find-recall");
+    if (deskFind) {
+      deskFind.addEventListener("click", findDeskMatchesAndRender);
+    }
+    var deskClose = document.getElementById("desk-detail-close");
+    if (deskClose) deskClose.addEventListener("click", closeDeskDetail);
+    var deskRec = document.getElementById("desk-detail-recreate");
+    if (deskRec) {
+      deskRec.addEventListener("click", function () {
+        closeDeskDetail();
+        window.location.hash = "new-entry";
+      });
+    }
+    var deskOv = document.getElementById("desk-detail-overlay");
+    if (deskOv) {
+      deskOv.addEventListener("click", function (e) {
+        if (e.target === deskOv) closeDeskDetail();
+      });
+    }
+
+    var logRange = document.getElementById("mobile-log-focus-range");
+    if (logRange) {
+      logRange.addEventListener("input", syncLogFocusUi);
+      syncLogFocusUi();
+    }
+    var mRecRange = document.getElementById("mobile-recall-focus-range");
+    if (mRecRange) {
+      mRecRange.addEventListener("input", syncRecallFocusUi);
+      syncRecallFocusUi();
+    }
+
+    var photoInput = document.getElementById("mobile-photo-input");
+    var uploadBtn = document.getElementById("mobile-btn-upload");
+    if (uploadBtn && photoInput) {
+      uploadBtn.addEventListener("click", function () {
+        photoInput.click();
+      });
+    }
+    if (photoInput) {
+      photoInput.addEventListener("change", function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f || !/^image\//.test(f.type)) return;
+        var r = new FileReader();
+        r.onload = function () {
+          state.uploadedImage = r.result;
+          syncCaptureThumb();
+          syncProcessingPhoto();
+        };
+        r.readAsDataURL(f);
+        e.target.value = "";
+      });
+    }
+    var takeBtn = document.getElementById("mobile-btn-take-photo");
+    if (takeBtn) {
+      takeBtn.addEventListener("click", function () {
+        navigateMobileForward("processing");
+      });
+    }
+    var contLog = document.getElementById("mobile-btn-continue-log");
+    if (contLog) {
+      contLog.addEventListener("click", function () {
+        navigateMobileForward("log");
+      });
+    }
+    var saveBtn = document.getElementById("mobile-btn-save-record");
+    if (saveBtn) saveBtn.addEventListener("click", saveMobileRecord);
+
+    var loadEarlier = document.getElementById("mobile-btn-load-earlier");
+    if (loadEarlier) {
+      loadEarlier.addEventListener("click", function () {
+        state.showEarlierMobile = true;
+        buildMobileArchiveList();
+      });
+    }
+
+    var findMob = document.getElementById("mobile-btn-find-match");
+    if (findMob) {
+      findMob.addEventListener("click", function () {
+        buildMobileRecallList(computeMobileMatches());
+      });
+    }
+
+    var mobRecreate = document.getElementById("mobile-btn-recreate");
+    if (mobRecreate) {
+      mobRecreate.addEventListener("click", function () {
+        var rec = state.selectedRecord;
+        state.mobileStack = [];
+        if (rec && rec.photoDataUrl) state.uploadedImage = rec.photoDataUrl;
+        else state.uploadedImage = null;
+        if (rec) {
+          state.focusLevel = rec.focus;
+          state.selectedMood = rec.mood;
+          state.selectedLighting = rec.light;
+        }
+        var lr = document.getElementById("mobile-log-focus-range");
+        if (lr) lr.value = String(state.focusLevel);
+        syncLogFocusUi();
+        syncCaptureThumb();
+        syncProcessingPhoto();
+        showMobileScreen("capture");
+      });
+    }
+
+    document.querySelectorAll(".js-mobile-back").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        navigateMobileBack();
+      });
+    });
+
+    var logSection = document.getElementById("mobile-log");
+    if (logSection) {
+      logSection.addEventListener("click", function (e) {
+        var m = e.target.closest("[data-mood-chip]");
+        if (m) {
+          m.parentElement.querySelectorAll("[data-mood-chip]").forEach(function (b) {
+            b.classList.remove("active");
+          });
+          m.classList.add("active");
+          state.selectedMood = m.textContent.trim();
+          var inp = document.getElementById("mobile-log-mood-input");
+          if (inp) inp.value = state.selectedMood;
+          return;
+        }
+        var l = e.target.closest("[data-light-chip]");
+        if (l) {
+          var crow = l.closest(".chip-row");
+          if (crow) {
+            crow.querySelectorAll("[data-light-chip]").forEach(function (b) {
+              b.classList.remove("active");
+            });
+          }
+          l.classList.add("active");
+          state.selectedLighting = l.textContent.trim();
+        }
+      });
+    }
+    var moodInp = document.getElementById("mobile-log-mood-input");
+    if (moodInp) {
+      moodInp.addEventListener("input", function () {
+        state.selectedMood = moodInp.value.trim() || state.selectedMood;
+      });
+    }
+
+    var recallSection = document.querySelector("#mobile-recall [data-chip-group=\"recall-mood\"]");
+    if (recallSection) {
+      recallSection.addEventListener("click", function (e) {
+        var c = e.target.closest("[data-recall-mood-chip]");
+        if (!c) return;
+        recallSection.querySelectorAll("[data-recall-mood-chip]").forEach(function (b) {
+          b.classList.remove("active");
+        });
+        c.classList.add("active");
+        state.recallMood = c.textContent.trim();
+      });
+    }
 
     document.querySelectorAll("[data-desk-nav]").forEach(function (el) {
       el.addEventListener("click", function (e) {
@@ -460,8 +1140,12 @@
 
     document.querySelectorAll("[data-mobile-go]").forEach(function (el) {
       el.addEventListener("click", function () {
-        showMobileScreen(el.getAttribute("data-mobile-go"));
+        navigateMobileForward(el.getAttribute("data-mobile-go"));
       });
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeDeskDetail();
     });
 
     window.addEventListener("hashchange", onHashChange);

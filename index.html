@@ -222,11 +222,11 @@
           </div>
           <div class="desk-archive__meta">
             <div>
-              <div class="desk-archive__meta-val">41</div>
+              <div class="desk-archive__meta-val" id="desk-archive-count">41</div>
               <div class="desk-archive__meta-lbl">records</div>
             </div>
             <div>
-              <div class="desk-archive__meta-val">68</div>
+              <div class="desk-archive__meta-val" id="desk-archive-avg-focus">68</div>
               <div class="desk-archive__meta-lbl">avg focus</div>
             </div>
           </div>
@@ -257,11 +257,12 @@
             <div class="desk-recall__panel">
               <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
                 <span class="desk-caption" style="margin:0">Desired Focus Level</span>
-                <span class="desk-recall__focus-big">85<small>%</small></span>
+                <span class="desk-recall__focus-big" id="desk-recall-focus-display">85<small>%</small></span>
               </div>
-              <div class="focus-slider-track" style="margin-bottom:4px">
-                <div class="focus-slider-fill" style="width:85%"></div>
-                <span class="desk-slider-thumb-dot"></span>
+              <div class="focus-slider-track focus-slider-track--interactive" style="margin-bottom:4px">
+                <input type="range" id="desk-recall-focus-range" min="0" max="100" value="85" class="slider-range-input" aria-label="Desired focus" />
+                <div class="focus-slider-fill" id="desk-recall-focus-fill" style="width:85%"></div>
+                <span class="desk-slider-thumb-dot" id="desk-recall-focus-thumb" style="left:85%"></span>
               </div>
               <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--gray3)">
                 <span>0 — Scattered</span><span>50</span><span>100 — Deep</span>
@@ -269,14 +270,14 @@
             </div>
             <div>
               <div class="desk-caption" style="margin-bottom:8px">Mood Preference</div>
-              <div class="desk-chip-row">
-                <button type="button">Any</button><button type="button">Calm</button><button type="button" class="is-on">Focused</button><button type="button">Alert</button><button type="button">Energized</button>
+              <div class="desk-chip-row" data-desk-chip-group="recall-mood">
+                <button type="button" class="is-on" data-desk-recall-mood>Any</button><button type="button" data-desk-recall-mood>Calm</button><button type="button" data-desk-recall-mood>Focused</button><button type="button" data-desk-recall-mood>Alert</button><button type="button" data-desk-recall-mood>Energized</button>
               </div>
             </div>
             <div>
               <div class="desk-caption" style="margin-bottom:8px">Lighting Condition</div>
-              <div class="desk-chip-row">
-                <button type="button">Any</button><button type="button" class="is-on">Bright</button><button type="button">Soft</button><button type="button">Dim</button>
+              <div class="desk-chip-row" data-desk-chip-group="recall-light">
+                <button type="button" class="is-on" data-desk-recall-light>Bright</button><button type="button" data-desk-recall-light>Soft</button><button type="button" data-desk-recall-light>Dim</button>
               </div>
             </div>
             <div style="height:1px;background:var(--gray1)"></div>
@@ -286,13 +287,13 @@
                 <button type="button" class="is-on">All Time</button><button type="button">Last Month</button><button type="button">Last Week</button>
               </div>
             </div>
-            <button type="button" class="desk-recall__cta"><span>Find Matching Configurations</span><span style="opacity:.5">⌕</span></button>
+            <button type="button" class="desk-recall__cta" id="desk-btn-find-recall"><span>Find Matching Configurations</span><span style="opacity:.5">⌕</span></button>
           </div>
           <div class="desk-recall__right">
             <div style="display:flex;justify-content:space-between;align-items:baseline">
               <div>
                 <div class="desk-next-h" style="margin-bottom:4px">Matched Records</div>
-                <span style="font-family:var(--mono);font-size:22px;font-weight:500;color:var(--ink)">4 </span>
+                <span id="desk-recall-result-count" style="font-family:var(--mono);font-size:22px;font-weight:500;color:var(--ink)">4 </span>
                 <span style="font-family:var(--mono);font-size:10px;color:var(--gray3)">results</span>
               </div>
               <div style="font-family:var(--mono);font-size:9px;color:var(--gray3);letter-spacing:0.1em">Sorted by match score</div>
@@ -302,6 +303,33 @@
         </div>
       </section>
     </main>
+
+    <div id="desk-detail-overlay" class="desk-detail-overlay" aria-hidden="true">
+      <div class="desk-detail-panel" role="dialog" aria-modal="true" aria-labelledby="desk-detail-heading">
+        <div class="desk-detail-panel__top">
+          <button type="button" class="desk-cell-btn" id="desk-detail-close">Close</button>
+        </div>
+        <div class="desk-caption" id="desk-detail-code">PAB-2025-0412-040</div>
+        <h3 id="desk-detail-heading" class="desk-detail-heading">Apr 11, 2025 — 8:15am</h3>
+        <div class="desk-detail-grid">
+          <div class="desk-detail-photo-cell">
+            <img id="desk-detail-photo" alt="" class="hidden desk-detail-photo-img" />
+            <svg id="desk-detail-photo-fallback" class="desk-detail-photo-fallback" viewBox="0 0 174 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#desk-photo-svg" /></svg>
+          </div>
+          <div>
+            <canvas id="canvas-desk-detail-pc" width="240" height="160" class="desk-detail-canvas"></canvas>
+            <div class="desk-detail-stats">
+              <div><span class="desk-detail-stat-lbl">Focus</span><span id="desk-detail-stat-focus">88%</span></div>
+              <div><span class="desk-detail-stat-lbl">Mood</span><span id="desk-detail-stat-mood">Focused</span></div>
+              <div><span class="desk-detail-stat-lbl">Light</span><span id="desk-detail-stat-light">Bright</span></div>
+              <div><span class="desk-detail-stat-lbl">Objects</span><span id="desk-detail-stat-objects">5</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="desk-p-sans desk-detail-notes" id="desk-detail-notes"></p>
+        <button type="button" class="desk-detail-recreate desk-cell-btn" id="desk-detail-recreate">Recreate This Setup →</button>
+      </div>
+    </div>
 
     <footer class="desk-footer">
       <span>Portable Attention Box — personal attention database (local prototype)</span>
@@ -372,10 +400,11 @@
             </div>
           </div>
           <div class="nav-bar">
-            <button type="button" class="back-btn" data-mobile-go="landing">← Home</button>
+            <button type="button" class="back-btn js-mobile-back">← Home</button>
             <span class="screen-title">New Record</span>
             <span style="width:60px"></span>
           </div>
+          <input type="file" id="mobile-photo-input" accept="image/*" class="sr-only" tabindex="-1" aria-hidden="true" />
           <div style="padding:10px 20px;display:flex;gap:4px;align-items:center">
             <div style="height:2px;flex:1;background:var(--ink)"></div>
             <div style="height:2px;flex:1;background:var(--gray1)"></div>
@@ -420,11 +449,12 @@
             <div style="flex:1;height:1px;background:var(--gray1)"></div>
           </div>
           <div style="padding:0 20px;margin-bottom:4px">
-            <button type="button" class="btn-ghost" style="padding:11px 20px"><span style="font-size:10px">Upload Photo from Library</span><span style="opacity:0.4">↑</span></button>
+            <button type="button" class="btn-ghost" style="padding:11px 20px" id="mobile-btn-upload"><span style="font-size:10px">Upload Photo from Library</span><span style="opacity:0.4">↑</span></button>
           </div>
           <div style="margin:14px 20px 0;padding:10px;border:1px solid var(--gray1);display:flex;gap:10px;align-items:center">
-            <div style="width:44px;height:44px;background:var(--paper2);border:1px solid var(--gray1);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <span style="font-size:7px;color:var(--gray3);letter-spacing:0.05em">REF</span>
+            <div id="mobile-capture-ref-thumb" style="width:44px;height:44px;background:var(--paper2);border:1px solid var(--gray1);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative">
+              <img id="mobile-capture-ref-img" alt="" class="hidden" style="width:100%;height:100%;object-fit:cover" />
+              <span id="mobile-capture-ref-fallback" style="font-size:7px;color:var(--gray3);letter-spacing:0.05em">REF</span>
             </div>
             <div>
               <div style="font-size:8px;letter-spacing:0.1em;color:var(--gray3);text-transform:uppercase;margin-bottom:2px">Last capture</div>
@@ -432,7 +462,7 @@
             </div>
           </div>
           <div style="flex-grow:1"></div>
-          <button type="button" class="btn-primary" data-mobile-go="processing"><span>Take Desk Photo</span><span style="font-size:14px;opacity:0.5">◉</span></button>
+          <button type="button" class="btn-primary" id="mobile-btn-take-photo"><span>Take Desk Photo</span><span style="font-size:14px;opacity:0.5">◉</span></button>
         </div>
       </section>
 
@@ -453,7 +483,7 @@
             </div>
           </div>
           <div class="nav-bar">
-            <button type="button" class="back-btn" data-mobile-go="capture">← Capture</button>
+            <button type="button" class="back-btn js-mobile-back">← Capture</button>
             <span class="screen-title">Spatial Processing</span>
             <span style="width:60px"></span>
           </div>
@@ -465,8 +495,9 @@
             <span style="font-size:8px;letter-spacing:0.15em;color:var(--gray3);margin-left:6px">2/4</span>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:8px 20px;border:1px solid var(--gray1)">
-            <div style="position:relative">
-              <svg width="174" height="200" viewBox="0 0 174 200" style="display:block"><use href="#desk-photo-svg" /></svg>
+            <div style="position:relative" id="mobile-proc-photo-cell">
+              <img id="mobile-proc-photo-img" alt="" class="hidden" style="display:block;width:174px;height:200px;object-fit:cover" />
+              <svg id="mobile-proc-photo-placeholder" width="174" height="200" viewBox="0 0 174 200" style="display:block"><use href="#desk-photo-svg" /></svg>
               <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:rgba(248,247,245,0.85);border-top:1px solid var(--gray1)">
                 <span style="font-size:7px;letter-spacing:0.12em;color:var(--gray3);text-transform:uppercase">Source Image</span>
               </div>
@@ -519,7 +550,7 @@
             </div>
           </div>
           <div style="flex-grow:1"></div>
-          <button type="button" class="btn-primary" data-mobile-go="log"><span>Continue to Log</span><span style="opacity:0.5">→</span></button>
+          <button type="button" class="btn-primary" id="mobile-btn-continue-log"><span>Continue to Log</span><span style="opacity:0.5">→</span></button>
         </div>
       </section>
 
@@ -540,7 +571,7 @@
             </div>
           </div>
           <div class="nav-bar">
-            <button type="button" class="back-btn" data-mobile-go="processing">← Processing</button>
+            <button type="button" class="back-btn js-mobile-back">← Processing</button>
             <span class="screen-title">Attention Log</span>
             <span style="width:60px"></span>
           </div>
@@ -554,11 +585,12 @@
           <div style="padding:14px 20px 8px">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
               <div class="field-label" style="margin-bottom:0">Focus Level</div>
-              <div style="font-size:22px;font-weight:500;font-family:var(--mono);letter-spacing:-0.02em">72<span style="font-size:12px;color:var(--gray3)">%</span></div>
+              <div id="mobile-log-focus-display" style="font-size:22px;font-weight:500;font-family:var(--mono);letter-spacing:-0.02em"><span id="mobile-log-focus-num">72</span><span style="font-size:12px;color:var(--gray3)">%</span></div>
             </div>
-            <div class="focus-slider-track">
-              <div class="focus-slider-fill" style="width:72%"></div>
-              <div class="focus-slider-thumb" style="left:72%"></div>
+            <div class="focus-slider-track focus-slider-track--interactive">
+              <input type="range" id="mobile-log-focus-range" min="0" max="100" value="72" class="slider-range-input" aria-label="Focus level" />
+              <div class="focus-slider-fill" id="mobile-log-focus-fill" style="width:72%"></div>
+              <div class="focus-slider-thumb" id="mobile-log-focus-thumb" style="left:72%"></div>
             </div>
             <div class="slider-labels"><span>0 — Scattered</span><span>50 — Moderate</span><span>100 — Deep</span></div>
             <div style="display:flex;gap:1px;margin-top:8px">
@@ -567,39 +599,39 @@
             </div>
           </div>
           <div class="divider"></div>
-          <div class="section" style="padding-bottom:12px">
+          <div class="section" style="padding-bottom:12px" data-chip-group="mood">
             <div class="field-label" style="margin-bottom:8px">Current Mood</div>
-            <input class="text-input" placeholder="e.g. calm, restless, energized…" />
+            <input class="text-input" id="mobile-log-mood-input" placeholder="e.g. calm, restless, energized…" />
             <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
-              <button type="button" class="chip active">Calm</button>
-              <button type="button" class="chip">Focused</button>
-              <button type="button" class="chip">Anxious</button>
-              <button type="button" class="chip">Restless</button>
-              <button type="button" class="chip">Alert</button>
-              <button type="button" class="chip">Tired</button>
+              <button type="button" class="chip active" data-mood-chip>Calm</button>
+              <button type="button" class="chip" data-mood-chip>Focused</button>
+              <button type="button" class="chip" data-mood-chip>Anxious</button>
+              <button type="button" class="chip" data-mood-chip>Restless</button>
+              <button type="button" class="chip" data-mood-chip>Alert</button>
+              <button type="button" class="chip" data-mood-chip>Tired</button>
             </div>
           </div>
           <div class="divider"></div>
-          <div class="section" style="padding-bottom:12px">
+          <div class="section" style="padding-bottom:12px" data-chip-group="lighting">
             <div class="field-label" style="margin-bottom:8px">Lighting Condition</div>
             <div class="chip-row">
-              <button type="button" class="chip">Bright</button>
-              <button type="button" class="chip active">Soft</button>
-              <button type="button" class="chip">Dim</button>
-              <button type="button" class="chip">Direct Sun</button>
-              <button type="button" class="chip">Artificial</button>
+              <button type="button" class="chip" data-light-chip>Bright</button>
+              <button type="button" class="chip active" data-light-chip>Soft</button>
+              <button type="button" class="chip" data-light-chip>Dim</button>
+              <button type="button" class="chip" data-light-chip>Direct Sun</button>
+              <button type="button" class="chip" data-light-chip>Artificial</button>
             </div>
           </div>
           <div class="divider"></div>
           <div class="section" style="padding-bottom:12px">
             <div class="field-label" style="margin-bottom:8px">Field Notes</div>
-            <textarea class="notes-area" placeholder="Observations about this session…" rows="3"></textarea>
+            <textarea class="notes-area" id="mobile-log-notes" placeholder="Observations about this session…" rows="3"></textarea>
           </div>
           <div style="padding:0 20px 10px;display:flex;justify-content:space-between">
-            <span style="font-size:8px;color:var(--gray3);letter-spacing:0.1em">RECORD ID — PAB-2025-0412-041</span>
-            <span style="font-size:8px;color:var(--gray3);letter-spacing:0.1em">9:41 AM</span>
+            <span id="mobile-log-record-id" style="font-size:8px;color:var(--gray3);letter-spacing:0.1em">RECORD ID — …</span>
+            <span id="mobile-log-time" style="font-size:8px;color:var(--gray3);letter-spacing:0.1em">—</span>
           </div>
-          <button type="button" class="btn-primary" style="margin-top:auto" data-mobile-go="archive"><span>Save Record</span><span style="opacity:0.5">→</span></button>
+          <button type="button" class="btn-primary" style="margin-top:auto" id="mobile-btn-save-record"><span>Save Record</span><span style="opacity:0.5">→</span></button>
         </div>
       </section>
 
@@ -625,7 +657,7 @@
               <div style="font-size:16px;font-weight:500;letter-spacing:-0.01em">Attention Archive</div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:22px;font-weight:500">41</div>
+              <div id="mobile-archive-count" style="font-size:22px;font-weight:500">41</div>
               <div style="font-size:8px;letter-spacing:0.1em;color:var(--gray3)">records</div>
             </div>
           </div>
@@ -637,7 +669,7 @@
             <button type="button" class="chip" style="font-size:7px;padding:3px 7px" data-mobile-go="recall">Recall</button>
           </div>
           <div style="overflow-y:auto;flex:1;padding-top:12px;display:flex;flex-direction:column;gap:8px;min-height:0" id="mobile-archive-list"></div>
-          <button type="button" class="btn-ghost" style="margin:4px 20px 20px;width:calc(100% - 40px)"><span>Load Earlier Records</span><span style="opacity:0.4">↓</span></button>
+          <button type="button" class="btn-ghost" style="margin:4px 20px 20px;width:calc(100% - 40px)" id="mobile-btn-load-earlier"><span>Load Earlier Records</span><span style="opacity:0.4">↓</span></button>
         </div>
       </section>
 
@@ -658,7 +690,7 @@
             </div>
           </div>
           <div class="nav-bar">
-            <button type="button" class="back-btn" data-mobile-go="archive">← Archive</button>
+            <button type="button" class="back-btn js-mobile-back">← Archive</button>
             <span class="screen-title">Recall Mode</span>
             <span style="width:60px"></span>
           </div>
@@ -669,29 +701,30 @@
           <div style="margin:0 20px;border:1px solid var(--ink);padding:14px">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
               <div class="field-label" style="margin-bottom:0">Desired Focus Level</div>
-              <div style="font-size:28px;font-weight:500;letter-spacing:-0.02em">85<span style="font-size:13px;color:var(--gray3)">%</span></div>
+              <div id="mobile-recall-focus-display" style="font-size:28px;font-weight:500;letter-spacing:-0.02em"><span id="mobile-recall-focus-num">85</span><span style="font-size:13px;color:var(--gray3)">%</span></div>
             </div>
-            <div class="focus-slider-track">
-              <div class="focus-slider-fill" style="width:85%"></div>
-              <div class="focus-slider-thumb" style="left:85%"></div>
+            <div class="focus-slider-track focus-slider-track--interactive">
+              <input type="range" id="mobile-recall-focus-range" min="0" max="100" value="85" class="slider-range-input" aria-label="Desired focus" />
+              <div class="focus-slider-fill" id="mobile-recall-focus-fill" style="width:85%"></div>
+              <div class="focus-slider-thumb" id="mobile-recall-focus-thumb" style="left:85%"></div>
             </div>
             <div class="slider-labels"><span>0</span><span>50</span><span>100</span></div>
           </div>
-          <div style="padding:10px 20px">
+          <div style="padding:10px 20px" data-chip-group="recall-mood">
             <div class="field-label" style="margin-bottom:6px">Mood Preference</div>
             <div class="chip-row">
-              <button type="button" class="chip">Any</button>
-              <button type="button" class="chip">Calm</button>
-              <button type="button" class="chip active">Focused</button>
-              <button type="button" class="chip">Alert</button>
+              <button type="button" class="chip active" data-recall-mood-chip>Any</button>
+              <button type="button" class="chip" data-recall-mood-chip>Calm</button>
+              <button type="button" class="chip" data-recall-mood-chip>Focused</button>
+              <button type="button" class="chip" data-recall-mood-chip>Alert</button>
             </div>
           </div>
           <div style="margin:0 20px 12px">
-            <button type="button" class="btn-primary"><span>Find Matching Configuration</span><span style="opacity:0.5">⌕</span></button>
+            <button type="button" class="btn-primary" id="mobile-btn-find-match"><span>Find Matching Configuration</span><span style="opacity:0.5">⌕</span></button>
           </div>
           <div class="divider"></div>
           <div style="padding:10px 20px 6px">
-            <div class="field-label">Matched Records <span style="margin-left:6px;font-style:normal;color:var(--ink);letter-spacing:0">3</span></div>
+            <div class="field-label">Matched Records <span id="mobile-recall-count" style="margin-left:6px;font-style:normal;color:var(--ink);letter-spacing:0">3</span></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:20px" id="mobile-recall-list"></div>
         </div>
@@ -714,20 +747,21 @@
             </div>
           </div>
           <div class="nav-bar">
-            <button type="button" class="back-btn" data-mobile-go="archive">← Archive</button>
+            <button type="button" class="back-btn js-mobile-back">← Back</button>
             <span class="screen-title">Record Detail</span>
             <span style="width:60px"></span>
           </div>
           <div style="padding:8px 20px 10px;border-bottom:1px solid var(--gray1);display:flex;justify-content:space-between;align-items:center">
             <div>
-              <div style="font-size:8px;letter-spacing:0.2em;color:var(--gray3);margin-bottom:1px">PAB-2025-0412-040</div>
-              <div style="font-size:13px;font-weight:500">Apr 11, 2025 — 8:15am</div>
+              <div id="mobile-detail-record-code" style="font-size:8px;letter-spacing:0.2em;color:var(--gray3);margin-bottom:1px">PAB-2025-0412-040</div>
+              <div id="mobile-detail-datetime" style="font-size:13px;font-weight:500">Apr 11, 2025 — 8:15am</div>
             </div>
-            <div style="padding:3px 8px;border:1px solid var(--ink);font-size:8px;letter-spacing:0.1em">88% focus</div>
+            <div id="mobile-detail-focus-badge" style="padding:3px 8px;border:1px solid var(--ink);font-size:8px;letter-spacing:0.1em">88% focus</div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:12px 20px;border:1px solid var(--gray1)">
             <div style="position:relative">
-              <svg width="174" height="170" viewBox="0 0 174 200" preserveAspectRatio="xMidYMid slice" style="display:block"><use href="#desk-photo-svg" /></svg>
+              <img id="mobile-detail-photo" alt="" class="hidden" style="width:174px;height:170px;object-fit:cover;display:block" />
+              <svg id="mobile-detail-photo-fallback" width="174" height="170" viewBox="0 0 174 200" preserveAspectRatio="xMidYMid slice" style="display:block"><use href="#desk-photo-svg" /></svg>
               <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 6px;background:rgba(248,247,245,0.85);border-top:1px solid var(--gray1)">
                 <span style="font-size:7px;letter-spacing:0.1em;color:var(--gray3)">PHOTOGRAPH</span>
               </div>
@@ -740,10 +774,10 @@
             </div>
           </div>
           <div style="padding:0 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div class="detail-stat"><span class="s-label">Focus Level</span><span class="s-value">88%</span></div>
-            <div class="detail-stat"><span class="s-label">Mood</span><span class="s-value">Focused</span></div>
-            <div class="detail-stat"><span class="s-label">Lighting</span><span class="s-value">Bright</span></div>
-            <div class="detail-stat"><span class="s-label">Duration</span><span class="s-value">2h 14m</span></div>
+            <div class="detail-stat"><span class="s-label">Focus Level</span><span class="s-value" id="mobile-detail-stat-focus">88%</span></div>
+            <div class="detail-stat"><span class="s-label">Mood</span><span class="s-value" id="mobile-detail-stat-mood">Focused</span></div>
+            <div class="detail-stat"><span class="s-label">Lighting</span><span class="s-value" id="mobile-detail-stat-light">Bright</span></div>
+            <div class="detail-stat"><span class="s-label">Duration</span><span class="s-value" id="mobile-detail-stat-duration">2h 14m</span></div>
           </div>
           <div class="divider" style="margin:0 20px 12px"></div>
           <div style="padding:0 20px 10px">
@@ -758,19 +792,19 @@
           </div>
           <div style="margin:0 20px 10px;padding:10px;background:var(--paper2);border:1px solid var(--gray1)">
             <div class="field-label" style="margin-bottom:5px">Field Notes</div>
-            <p style="font-family:var(--sans);font-size:11px;color:var(--gray3);line-height:1.6">
+            <p id="mobile-detail-notes" style="font-family:var(--sans);font-size:11px;color:var(--gray3);line-height:1.6">
               Morning session. Light came from left window. Monitor slightly above eye level. Good sustained focus — plant may be contributing positively.
             </p>
           </div>
           <div style="padding:0 20px 12px">
             <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--gray3);letter-spacing:0.08em;margin-bottom:4px">
-              <span>Focus distribution</span><span>88%</span>
+              <span>Focus distribution</span><span id="mobile-detail-focus-pct-label">88%</span>
             </div>
             <div style="height:3px;background:var(--gray1);position:relative">
-              <div style="position:absolute;left:0;top:0;height:100%;width:88%;background:var(--ink)"></div>
+              <div id="mobile-detail-focus-bar" style="position:absolute;left:0;top:0;height:100%;width:88%;background:var(--ink)"></div>
             </div>
           </div>
-          <button type="button" class="btn-primary" style="margin-top:auto"><span>Recreate This Setup</span><span style="opacity:0.5">↻</span></button>
+          <button type="button" class="btn-primary" style="margin-top:auto" id="mobile-btn-recreate"><span>Recreate This Setup</span><span style="opacity:0.5">↻</span></button>
         </div>
       </section>
     </div>
