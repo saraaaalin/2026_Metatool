@@ -105,6 +105,74 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
   }
 
+  function isStorageQuotaError(e) {
+    if (!e) return false;
+    if (e.name === "QuotaExceededError") return true;
+    if (e.name === "NS_ERROR_DOM_QUOTA_REACHED") return true;
+    if (e.code === 22) return true;
+    if (e.code === 1014) return true;
+    return false;
+  }
+
+  /** Resize JPEG data URL so localStorage JSON stays under typical ~5MB limits. */
+  function compressImageDataUrl(dataUrl, maxEdge, quality, callback) {
+    if (!dataUrl || typeof dataUrl !== "string" || dataUrl.indexOf("data:image") !== 0) {
+      callback(dataUrl);
+      return;
+    }
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var w = img.naturalWidth || img.width;
+        var h = img.naturalHeight || img.height;
+        if (!w || !h) {
+          callback(dataUrl);
+          return;
+        }
+        var sc = Math.min(1, maxEdge / Math.max(w, h));
+        var tw = Math.max(1, Math.round(w * sc));
+        var th = Math.max(1, Math.round(h * sc));
+        var c = document.createElement("canvas");
+        c.width = tw;
+        c.height = th;
+        var ctx = c.getContext("2d");
+        if (!ctx) {
+          callback(dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, tw, th);
+        var out = c.toDataURL("image/jpeg", quality);
+        callback(out || dataUrl);
+      } catch (err) {
+        callback(dataUrl);
+      }
+    };
+    img.onerror = function () {
+      callback(dataUrl);
+    };
+    img.src = dataUrl;
+  }
+
+  function persistRecordListWithQuotaFallback(all, rec) {
+    try {
+      saveRecordsToStorage(all);
+      return true;
+    } catch (e) {
+      if (!isStorageQuotaError(e)) {
+        return false;
+      }
+      all.shift();
+      rec.photoDataUrl = null;
+      all.unshift(rec);
+      try {
+        saveRecordsToStorage(all);
+        return true;
+      } catch (e2) {
+        return false;
+      }
+    }
+  }
+
   function getAllRecords() {
     return loadRecordsFromStorage();
   }
@@ -1205,6 +1273,12 @@
   }
 
   function saveMobileRecord() {
+    var btn = document.getElementById("mobile-btn-save-record");
+    if (btn && btn.getAttribute("data-saving") === "1") return;
+    if (btn) {
+      btn.setAttribute("data-saving", "1");
+      btn.disabled = true;
+    }
     var notesEl = document.getElementById("mobile-log-notes");
     var idLine = document.getElementById("mobile-log-record-id");
     var now = new Date();
@@ -1220,19 +1294,46 @@
       light: state.selectedLighting,
       objects: 4 + Math.floor(Math.random() * 3),
       notes: notesEl ? notesEl.value : "",
-      photoDataUrl: state.uploadedImage,
+      photoDataUrl: null,
       duration: "1h 20m",
       createdAt: now.getTime(),
     };
-    var all = getAllRecords();
-    all.unshift(rec);
-    saveRecordsToStorage(all);
-    state.uploadedImage = null;
-    state.mobileStack = [];
-    buildDeskArchiveRows();
-    updateDeskArchiveMeta();
-    buildMobileArchiveList();
-    showMobileScreen("archive");
+    function resetSaveButton() {
+      if (btn) {
+        btn.removeAttribute("data-saving");
+        btn.disabled = false;
+      }
+    }
+    function commitWithPhoto(photoUrl) {
+      try {
+        rec.photoDataUrl = photoUrl;
+        var all = getAllRecords();
+        all.unshift(rec);
+        var ok = persistRecordListWithQuotaFallback(all, rec);
+        if (!ok) {
+          window.alert(
+            "Could not save this record. Allow site storage or free space in your browser, then try again."
+          );
+          return;
+        }
+        state.uploadedImage = null;
+        state.mobileStack = [];
+        buildDeskArchiveRows();
+        updateDeskArchiveMeta();
+        buildMobileArchiveList();
+        showMobileScreen("archive");
+      } catch (err) {
+        window.alert("Save failed: " + (err && err.message ? err.message : String(err)));
+      } finally {
+        resetSaveButton();
+      }
+    }
+    var raw = state.uploadedImage;
+    if (raw && raw.length > 450000) {
+      compressImageDataUrl(raw, 1280, 0.78, commitWithPhoto);
+    } else {
+      commitWithPhoto(raw || null);
+    }
   }
 
   function getActiveMobileScreen() {
@@ -1422,6 +1523,12 @@
   }
 
   function saveDeskRecord() {
+    var btn = document.getElementById("desk-btn-save-entry");
+    if (btn && btn.getAttribute("data-saving") === "1") return;
+    if (btn) {
+      btn.setAttribute("data-saving", "1");
+      btn.disabled = true;
+    }
     var notesEl = document.getElementById("desk-log-notes");
     var idEl = document.getElementById("desk-log-record-id-display");
     var displayId = idEl ? idEl.textContent.replace(/^RECORD ID —\s*/i, "").trim() : "PAB-NEW";
@@ -1437,19 +1544,46 @@
       light: getDeskLogLight(),
       objects: 4 + Math.floor(Math.random() * 3),
       notes: notesEl ? notesEl.value : "",
-      photoDataUrl: state.uploadedImage,
+      photoDataUrl: null,
       duration: "1h 20m",
       createdAt: now.getTime(),
     };
-    var all = getAllRecords();
-    all.unshift(rec);
-    saveRecordsToStorage(all);
-    state.uploadedImage = null;
-    state.deskEntryStep = 1;
-    buildDeskArchiveRows();
-    updateDeskArchiveMeta();
-    buildMobileArchiveList();
-    window.location.hash = "archive";
+    function resetSaveButton() {
+      if (btn) {
+        btn.removeAttribute("data-saving");
+        btn.disabled = false;
+      }
+    }
+    function commitWithPhoto(photoUrl) {
+      try {
+        rec.photoDataUrl = photoUrl;
+        var all = getAllRecords();
+        all.unshift(rec);
+        var ok = persistRecordListWithQuotaFallback(all, rec);
+        if (!ok) {
+          window.alert(
+            "Could not save this record. Allow site storage or free space in your browser, then try again."
+          );
+          return;
+        }
+        state.uploadedImage = null;
+        state.deskEntryStep = 1;
+        buildDeskArchiveRows();
+        updateDeskArchiveMeta();
+        buildMobileArchiveList();
+        window.location.hash = "archive";
+      } catch (err) {
+        window.alert("Save failed: " + (err && err.message ? err.message : String(err)));
+      } finally {
+        resetSaveButton();
+      }
+    }
+    var raw = state.uploadedImage;
+    if (raw && raw.length > 450000) {
+      compressImageDataUrl(raw, 1280, 0.78, commitWithPhoto);
+    } else {
+      commitWithPhoto(raw || null);
+    }
   }
 
   function bindDeskLogFormChips() {
