@@ -1315,7 +1315,6 @@
       var now = new Date();
       dt.textContent = formatLogDate(now) + " — " + formatLogTime(now);
     }
-    syncDeskEntryReferencePhotos();
   }
 
   function onDeskTakePhotoClick() {
@@ -1443,29 +1442,6 @@
     });
   }
 
-  function syncDeskEntryReferencePhotos() {
-    var url = state.uploadedImage;
-    var pairs = [
-      ["desk-log-inline-preview", "desk-log-inline-preview-empty"],
-      ["desk-log-sidebar-preview", "desk-log-sidebar-preview-empty"],
-    ];
-    var i;
-    for (i = 0; i < pairs.length; i += 1) {
-      var imgEl = document.getElementById(pairs[i][0]);
-      var emptyEl = document.getElementById(pairs[i][1]);
-      if (!imgEl || !emptyEl) continue;
-      if (url) {
-        imgEl.src = url;
-        imgEl.classList.remove("hidden");
-        emptyEl.classList.add("hidden");
-      } else {
-        imgEl.removeAttribute("src");
-        imgEl.classList.add("hidden");
-        emptyEl.classList.remove("hidden");
-      }
-    }
-  }
-
   function refreshDeskEntryProcessPanel() {
     var img = document.getElementById("desk-process-source-thumb");
     var emptyPh = document.getElementById("desk-process-source-empty");
@@ -1484,7 +1460,6 @@
     if (canvas && state.uploadedImage) {
       drawPointCloudMetatoolFromImage(canvas, state.uploadedImage, 170);
     }
-    syncDeskEntryReferencePhotos();
   }
 
   function syncDeskLogFocusUi() {
@@ -1604,7 +1579,6 @@
     }
     if (n === 3) {
       prepareDeskLogUi();
-      syncDeskEntryReferencePhotos();
     }
     if (n === 4) {
       syncDeskSaveSummary();
