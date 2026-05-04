@@ -721,6 +721,61 @@
     if (a) a.textContent = String(avg);
   }
 
+  function getSelectedDeskArchiveRecordIds() {
+    var host = document.getElementById("desk-archive-rows");
+    if (!host) return [];
+    var ids = [];
+    host.querySelectorAll("input[data-archive-select]:checked").forEach(function (cb) {
+      var row = cb.closest(".desk-table-row");
+      if (row) ids.push(row.getAttribute("data-record-id"));
+    });
+    return ids;
+  }
+
+  function updateDeskArchiveBulkUi() {
+    var ids = getSelectedDeskArchiveRecordIds();
+    var delBtn = document.getElementById("desk-archive-delete-selected");
+    var hint = document.getElementById("desk-archive-selection-hint");
+    var allCb = document.getElementById("desk-archive-select-all");
+    var host = document.getElementById("desk-archive-rows");
+    var total = host ? host.querySelectorAll(".desk-table-row").length : 0;
+    var n = ids.length;
+    if (delBtn) delBtn.disabled = n === 0;
+    if (hint) hint.textContent = n ? n + " selected" : "";
+    if (allCb && host) {
+      allCb.checked = total > 0 && n === total;
+      allCb.indeterminate = n > 0 && n < total;
+    }
+  }
+
+  function deleteSelectedDeskArchiveRecords() {
+    var ids = getSelectedDeskArchiveRecordIds();
+    if (!ids.length) return;
+    if (
+      !window.confirm(
+        "Delete " + ids.length + " record(s) from this device? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    var skip = {};
+    ids.forEach(function (id) {
+      skip[id] = true;
+    });
+    var all = getAllRecords().filter(function (r) {
+      return !skip[r.id];
+    });
+    saveRecordsToStorage(all);
+    var allCb = document.getElementById("desk-archive-select-all");
+    if (allCb) {
+      allCb.checked = false;
+      allCb.indeterminate = false;
+    }
+    buildDeskArchiveRows();
+    findDeskMatchesAndRender();
+    buildMobileArchiveList();
+  }
+
   function buildDeskArchiveRows() {
     var host = document.getElementById("desk-archive-rows");
     if (!host) return;
@@ -736,9 +791,10 @@
       var photoCell = r.photoDataUrl
         ? '<div class="desk-thumb-cell"><img src="' +
           r.photoDataUrl +
-          '" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>'
+          '" alt="" /></div>'
         : '<div class="desk-thumb-cell"><svg viewBox="0 0 60 52" width="60" height="52"><use href="#desk-thumb" /></svg></div>';
       row.innerHTML =
+        '<div class="desk-archive-check" data-archive-no-open="1"><input type="checkbox" data-archive-select="" aria-label="Select this record" /></div>' +
         photoCell +
         '<div class="desk-thumb-cell"><canvas width="60" height="52" data-pc-m="desk-arch-' +
         idx +
@@ -773,15 +829,8 @@
       drawPointCloudMetatool(cv, cv.getAttribute("data-pc-m"), den);
     });
 
-    host.onclick = function (e) {
-      var row = e.target.closest(".desk-table-row");
-      if (!row || !host.contains(row)) return;
-      var id = row.getAttribute("data-record-id");
-      var rec = findRecordByIdDesk(id);
-      if (rec) openDeskDetail(rec);
-    };
-
     updateDeskArchiveMeta();
+    updateDeskArchiveBulkUi();
   }
 
   function buildDeskRecallResults(matches) {
@@ -1261,6 +1310,7 @@
       var now = new Date();
       dt.textContent = formatLogDate(now) + " — " + formatLogTime(now);
     }
+    syncDeskEntryReferencePhotos();
   }
 
   function onDeskTakePhotoClick() {
@@ -1388,15 +1438,48 @@
     });
   }
 
+  function syncDeskEntryReferencePhotos() {
+    var url = state.uploadedImage;
+    var pairs = [
+      ["desk-log-inline-preview", "desk-log-inline-preview-empty"],
+      ["desk-log-sidebar-preview", "desk-log-sidebar-preview-empty"],
+    ];
+    var i;
+    for (i = 0; i < pairs.length; i += 1) {
+      var imgEl = document.getElementById(pairs[i][0]);
+      var emptyEl = document.getElementById(pairs[i][1]);
+      if (!imgEl || !emptyEl) continue;
+      if (url) {
+        imgEl.src = url;
+        imgEl.classList.remove("hidden");
+        emptyEl.classList.add("hidden");
+      } else {
+        imgEl.removeAttribute("src");
+        imgEl.classList.add("hidden");
+        emptyEl.classList.remove("hidden");
+      }
+    }
+  }
+
   function refreshDeskEntryProcessPanel() {
     var img = document.getElementById("desk-process-source-thumb");
+    var emptyPh = document.getElementById("desk-process-source-empty");
     var canvas = document.getElementById("canvas-desk-entry-process");
-    if (img && state.uploadedImage) {
-      img.src = state.uploadedImage;
+    if (img) {
+      if (state.uploadedImage) {
+        img.src = state.uploadedImage;
+        img.classList.remove("hidden");
+        if (emptyPh) emptyPh.classList.add("hidden");
+      } else {
+        img.removeAttribute("src");
+        img.classList.add("hidden");
+        if (emptyPh) emptyPh.classList.remove("hidden");
+      }
     }
     if (canvas && state.uploadedImage) {
       drawPointCloudMetatoolFromImage(canvas, state.uploadedImage, 170);
     }
+    syncDeskEntryReferencePhotos();
   }
 
   function syncDeskLogFocusUi() {
@@ -1516,6 +1599,7 @@
     }
     if (n === 3) {
       prepareDeskLogUi();
+      syncDeskEntryReferencePhotos();
     }
     if (n === 4) {
       syncDeskSaveSummary();
