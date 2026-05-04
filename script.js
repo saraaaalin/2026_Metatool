@@ -311,6 +311,239 @@
     });
   }
 
+  /**
+   * Build a per-cell weight map from an image: stronger weight where there are
+   * edges (object boundaries) and local luminance variance (texture / clutter).
+   */
+  function sampleImageToDensityGrid(img, cols, rows) {
+    var c = document.createElement("canvas");
+    c.width = cols;
+    c.height = rows;
+    var ctx = c.getContext("2d");
+    if (!ctx) {
+      return { weights: new Float32Array(cols * rows).fill(1), cols: cols, rows: rows, totalWeight: cols * rows };
+    }
+    var iw = img.naturalWidth || img.width;
+    var ih = img.naturalHeight || img.height;
+    if (!iw || !ih) {
+      return { weights: new Float32Array(cols * rows).fill(1), cols: cols, rows: rows, totalWeight: cols * rows };
+    }
+    var scale = Math.max(cols / iw, rows / ih);
+    var sw = cols / scale;
+    var sh = rows / scale;
+    var sx = Math.max(0, (iw - sw) / 2);
+    var sy = Math.max(0, (ih - sh) / 2);
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cols, rows);
+    var id = ctx.getImageData(0, 0, cols, rows);
+    var data = id.data;
+    var gray = new Float32Array(cols * rows);
+    var gx;
+    var gy;
+    var i;
+    for (gy = 0; gy < rows; gy += 1) {
+      for (gx = 0; gx < cols; gx += 1) {
+        i = (gy * cols + gx) * 4;
+        gray[gy * cols + gx] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      }
+    }
+    function getG(x, y) {
+      var cx = x;
+      var cy = y;
+      if (cx < 0) cx = 0;
+      if (cx >= cols) cx = cols - 1;
+      if (cy < 0) cy = 0;
+      if (cy >= rows) cy = rows - 1;
+      return gray[cy * cols + cx];
+    }
+    var mag = new Float32Array(cols * rows);
+    var Gx;
+    var Gy;
+    for (gy = 0; gy < rows; gy += 1) {
+      for (gx = 0; gx < cols; gx += 1) {
+        Gx =
+          -getG(gx - 1, gy - 1) +
+          getG(gx + 1, gy - 1) +
+          2 * (-getG(gx - 1, gy) + getG(gx + 1, gy)) -
+          getG(gx - 1, gy + 1) +
+          getG(gx + 1, gy + 1);
+        Gy =
+          -getG(gx - 1, gy - 1) -
+          2 * getG(gx, gy - 1) -
+          getG(gx + 1, gy - 1) +
+          getG(gx - 1, gy + 1) +
+          2 * getG(gx, gy + 1) +
+          getG(gx + 1, gy + 1);
+        mag[gy * cols + gx] = Math.sqrt(Gx * Gx + Gy * Gy);
+      }
+    }
+    var weights = new Float32Array(cols * rows);
+    var maxW = 0;
+    for (gy = 0; gy < rows; gy += 1) {
+      for (gx = 0; gx < cols; gx += 1) {
+        var sum = 0;
+        var sumSq = 0;
+        var cnt = 0;
+        var dy;
+        var dx;
+        for (dy = -1; dy <= 1; dy += 1) {
+          for (dx = -1; dx <= 1; dx += 1) {
+            var vly = gy + dy;
+            var vlx = gx + dx;
+            if (vly < 0 || vly >= rows || vlx < 0 || vlx >= cols) continue;
+            var gv = gray[vly * cols + vlx];
+            sum += gv;
+            sumSq += gv * gv;
+            cnt += 1;
+          }
+        }
+        var mean = sum / cnt;
+        var variance = Math.max(0, sumSq / cnt - mean * mean);
+        var e = mag[gy * cols + gx];
+        var wgt = e * 0.62 + Math.sqrt(variance) * 0.38;
+        weights[gy * cols + gx] = wgt;
+        if (wgt > maxW) maxW = wgt;
+      }
+    }
+    var total = 0;
+    for (i = 0; i < weights.length; i += 1) {
+      weights[i] = (weights[i] / (maxW + 1e-6)) * 0.9 + 0.1;
+      total += weights[i];
+    }
+    return { weights: weights, cols: cols, rows: rows, totalWeight: total };
+  }
+
+  function drawPointCloudFromDensityGrid(canvas, grid, pointCount, variant) {
+    var w = canvas.width;
+    var h = canvas.height;
+    var ctx = canvas.getContext("2d");
+    if (!ctx || !grid || !grid.weights) return;
+    var weights = grid.weights;
+    var cols = grid.cols;
+    var rows = grid.rows;
+    var totalWeight = grid.totalWeight || 0;
+    if (totalWeight <= 0) {
+      totalWeight = weights.length;
+    }
+    var rand = mulberry32(hashString(String(totalWeight) + "-" + cols + "-" + rows) || 1);
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.strokeStyle = "rgba(12,12,12,0.05)";
+    ctx.lineWidth = 0.5;
+    var yy;
+    var xx;
+    for (yy = 0; yy <= h; yy += 20) {
+      ctx.beginPath();
+      ctx.moveTo(0, yy);
+      ctx.lineTo(w, yy);
+      ctx.stroke();
+    }
+    for (xx = 0; xx <= w; xx += 20) {
+      ctx.beginPath();
+      ctx.moveTo(xx, 0);
+      ctx.lineTo(xx, h);
+      ctx.stroke();
+    }
+
+    var maxW = 0;
+    var wi;
+    for (wi = 0; wi < weights.length; wi += 1) {
+      if (weights[wi] > maxW) maxW = weights[wi];
+    }
+
+    function pickCell() {
+      var t = rand() * totalWeight;
+      var acc = 0;
+      var k;
+      for (k = 0; k < weights.length; k += 1) {
+        acc += weights[k];
+        if (t <= acc) return k;
+      }
+      return weights.length - 1;
+    }
+
+    var pts = [];
+    var i;
+    for (i = 0; i < pointCount; i += 1) {
+      var idx = pickCell();
+      var cellX = idx % cols;
+      var cellY = Math.floor(idx / cols);
+      var dNorm = weights[idx] / (maxW + 1e-6);
+      var jitterX = (rand() * 0.82 + 0.09) / cols;
+      var jitterY = (rand() * 0.82 + 0.09) / rows;
+      var px = ((cellX + jitterX) / cols) * w;
+      var py = ((cellY + jitterY) / rows) * h;
+      if (variant === "portable") {
+        py = py * 0.93 + h * 0.035;
+      }
+      pts.push({
+        x: px,
+        y: py,
+        s: 0.65 + dNorm * 2.85 + rand() * 0.5,
+        o: Math.min(0.92, 0.13 + dNorm * 0.64 + rand() * 0.14),
+        d: dNorm,
+      });
+    }
+
+    var edgeDist = variant === "portable" ? 55 : 60;
+    var edgeCap = variant === "portable" ? 40 : 50;
+    for (i = 0; i < Math.min(edgeCap, pts.length); i += 1) {
+      var j;
+      for (j = i + 1; j < Math.min(i + 3, pts.length); j += 1) {
+        var p = pts[i];
+        var q = pts[j];
+        var dist = Math.hypot(q.x - p.x, q.y - p.y);
+        if (dist < edgeDist) {
+          var da = p.d != null ? p.d : 0.5;
+          var db = q.d != null ? q.d : 0.5;
+          var edgeAlpha = 0.055 + 0.08 * Math.min(da, db);
+          ctx.strokeStyle = "rgba(12,12,12," + edgeAlpha + ")";
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    pts.forEach(function (p) {
+      ctx.fillStyle = "rgba(12,12,12," + p.o + ")";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function drawPointCloudMetatoolFromImage(canvas, dataUrl, pointCount) {
+    if (!canvas || !dataUrl) return;
+    var img = new Image();
+    img.onload = function () {
+      var cols = 56;
+      var rows = Math.max(28, Math.round(cols * (canvas.height / canvas.width)));
+      var grid = sampleImageToDensityGrid(img, cols, rows);
+      drawPointCloudFromDensityGrid(canvas, grid, pointCount || 160, "metatool");
+    };
+    img.onerror = function () {
+      drawPointCloudMetatool(canvas, "img-fallback", Math.min(130, pointCount || 130));
+    };
+    img.src = dataUrl;
+  }
+
+  function drawPointCloudPortableFromImage(canvas, dataUrl, pointCount) {
+    if (!canvas || !dataUrl) return;
+    var img = new Image();
+    img.onload = function () {
+      var cols = 48;
+      var rows = Math.max(26, Math.round(cols * (canvas.height / canvas.width)));
+      var grid = sampleImageToDensityGrid(img, cols, rows);
+      drawPointCloudFromDensityGrid(canvas, grid, pointCount || 100, "portable");
+    };
+    img.onerror = function () {
+      drawPointCloudPortable(canvas, "mobile-proc-fallback", Math.min(90, pointCount || 90));
+    };
+    img.src = dataUrl;
+  }
+
   function renderHalftone(container, width, height) {
     if (!container) return;
     var ns = "http://www.w3.org/2000/svg";
@@ -1061,8 +1294,7 @@
       img.src = state.uploadedImage;
     }
     if (canvas && state.uploadedImage) {
-      var seed = "desk-proc-" + String(state.uploadedImage.length) + "-" + String(hashString(state.uploadedImage.slice(0, 80)));
-      drawPointCloudMetatool(canvas, seed, 130);
+      drawPointCloudMetatoolFromImage(canvas, state.uploadedImage, 170);
     }
   }
 
@@ -1293,7 +1525,11 @@
     }
     if (name === "processing") {
       var pc = document.getElementById("canvas-mobile-proc-pc");
-      if (pc) drawPointCloudPortable(pc, "mobile-proc", 90);
+      if (pc && state.uploadedImage) {
+        drawPointCloudPortableFromImage(pc, state.uploadedImage, 110);
+      } else if (pc) {
+        drawPointCloudPortable(pc, "mobile-proc", 90);
+      }
       syncProcessingPhoto();
     }
     if (name === "log") {
