@@ -749,19 +749,10 @@
               <span class="mobile-upload-label__face" style="opacity:0.4;font-size:11px">↑</span>
             </label>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:8px 20px;border:1px solid var(--gray1)">
-            <div style="position:relative" id="mobile-proc-photo-cell">
-              <img id="mobile-proc-photo-img" alt="" class="hidden" style="display:block;width:174px;height:200px;object-fit:cover" />
-              <svg id="mobile-proc-photo-placeholder" width="174" height="200" viewBox="0 0 174 200" style="display:block"><use href="#desk-photo-svg" /></svg>
-              <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:rgba(248,247,245,0.85);border-top:1px solid var(--gray1)">
-                <span style="font-size:7px;letter-spacing:0.12em;color:var(--gray3);text-transform:uppercase">Source Image</span>
-              </div>
-            </div>
-            <div style="background:var(--paper2);position:relative">
-              <canvas id="canvas-mobile-proc-pc" width="174" height="200"></canvas>
-              <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:rgba(239,239,237,0.85);border-top:1px solid var(--gray1)">
-                <span style="font-size:7px;letter-spacing:0.12em;color:var(--gray3);text-transform:uppercase">Spatial Record</span>
-              </div>
+          <div class="mobile-proc-viz-wrap">
+            <canvas id="canvas-mobile-proc-pc" width="340" height="280" class="mobile-proc-canvas"></canvas>
+            <div class="mobile-proc-viz-caption">
+              <span>Spatial record</span>
             </div>
           </div>
           <div style="padding:4px 20px;display:flex;gap:16px">
@@ -774,35 +765,16 @@
             <div class="field-label" style="margin-bottom:10px">Processing Log</div>
             <div class="processing-item"><span class="processing-dot done"></span><span style="color:var(--gray3)">Translating desk image into spatial record</span><span style="margin-left:auto;font-size:8px;color:var(--gray3)">✓</span></div>
             <div class="processing-item"><span class="processing-dot done"></span><span style="color:var(--gray3)">Detecting object density</span><span style="margin-left:auto;font-size:8px;color:var(--gray3)">✓</span></div>
-            <div class="processing-item"><span class="processing-dot active"></span><span style="color:var(--ink)">Mapping attention environment</span></div>
+            <div class="processing-item"><span class="processing-dot active"></span><span style="color:var(--ink)">Mapping attention environment</span><span style="margin-left:auto;font-size:8px;color:var(--gray3)"></span></div>
           </div>
           <div class="divider" style="margin:4px 20px"></div>
           <div style="padding:12px 20px">
-            <div class="field-label" style="margin-bottom:8px">Detected Objects</div>
-            <div style="display:flex;flex-wrap:wrap;gap:5px">
-              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Monitor ×1</span>
-              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Keyboard ×1</span>
-              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Coffee Mug ×1</span>
-              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Books ×2</span>
-              <span style="padding:3px 8px;border:1px solid var(--gray1);font-size:8px;letter-spacing:0.08em;color:var(--gray3)">Plant ×1</span>
-            </div>
+            <div class="field-label" style="margin-bottom:8px">Detected structure <span style="font-weight:300;color:var(--gray3);letter-spacing:0.06em">(from image density)</span></div>
+            <div class="mobile-proc-chips" id="mobile-proc-objects"></div>
           </div>
           <div style="margin:0 20px;border:1px solid var(--gray1);padding:8px 10px;background:var(--paper2)">
-            <div class="field-label" style="margin-bottom:4px">Density Distribution</div>
-            <div style="display:flex;gap:2px;align-items:flex-end;height:28px">
-              <span style="flex:1;background:var(--ink);opacity:0.41;height:30%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.55;height:50%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.69;height:70%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.83;height:90%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.73;height:75%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.62;height:60%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.48;height:40%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.59;height:55%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.76;height:80%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.66;height:65%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.52;height:45%"></span>
-              <span style="flex:1;background:var(--ink);opacity:0.45;height:35%"></span>
-            </div>
+            <div class="field-label" style="margin-bottom:4px">Density distribution <span style="font-weight:300;color:var(--gray3);letter-spacing:0.06em">(columns)</span></div>
+            <div class="mobile-proc-density-track" id="mobile-proc-density-bars"></div>
           </div>
           <div style="flex-grow:1"></div>
           <button type="button" class="btn-primary" id="mobile-btn-continue-log"><span>Continue to Log</span><span style="opacity:0.5">→</span></button>

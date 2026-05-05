@@ -73,6 +73,8 @@
     /** Shared archive list filter (desktop table + mobile cards). */
     archiveFilter: "all",
     archiveSortNewestFirst: true,
+    /** Estimated object / region count from mobile processing analysis (optional). */
+    mobileInferredObjectCount: null,
   };
 
   function seedInitialRecords() {
@@ -503,6 +505,312 @@
       total += weights[i];
     }
     return { weights: weights, cols: cols, rows: rows, totalWeight: total };
+  }
+
+  function escapeHtmlMini(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function varianceOfWeights(weights) {
+    var n = weights.length;
+    if (!n) return 0;
+    var s = 0;
+    var s2 = 0;
+    var i;
+    for (i = 0; i < n; i += 1) {
+      var v = weights[i];
+      s += v;
+      s2 += v * v;
+    }
+    var m = s / n;
+    return Math.max(0, s2 / n - m * m);
+  }
+
+  function countDensityBlobs(weights, cols, rows) {
+    var sum = 0;
+    var i;
+    for (i = 0; i < weights.length; i += 1) {
+      sum += weights[i];
+    }
+    var avg = sum / weights.length;
+    var thr = Math.min(0.74, Math.max(0.24, avg * 1.05 + 0.06));
+    var mask = new Uint8Array(cols * rows);
+    for (i = 0; i < weights.length; i += 1) {
+      mask[i] = weights[i] >= thr ? 1 : 0;
+    }
+    var seen = new Uint8Array(cols * rows);
+    var blobs = 0;
+    var y;
+    var x;
+    for (y = 0; y < rows; y += 1) {
+      for (x = 0; x < cols; x += 1) {
+        var idx = y * cols + x;
+        if (!mask[idx] || seen[idx]) continue;
+        blobs += 1;
+        var q = [idx];
+        seen[idx] = 1;
+        while (q.length) {
+          var cur = q.pop();
+          var cx = cur % cols;
+          var cy = (cur / cols) | 0;
+          var dirs = [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ];
+          var d;
+          for (d = 0; d < 4; d += 1) {
+            var nx = cx + dirs[d][0];
+            var ny = cy + dirs[d][1];
+            if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
+            var ni = ny * cols + nx;
+            if (!mask[ni] || seen[ni]) continue;
+            seen[ni] = 1;
+            q.push(ni);
+          }
+        }
+      }
+    }
+    return { blobs: blobs, thr: thr, avg: avg };
+  }
+
+  function columnDensityHistogram(weights, cols, rows, numBars) {
+    var bars = [];
+    var colW = cols / numBars;
+    var b;
+    for (b = 0; b < numBars; b += 1) {
+      var x0 = Math.floor(b * colW);
+      var x1 = b === numBars - 1 ? cols : Math.floor((b + 1) * colW);
+      var sum = 0;
+      var gx;
+      var gy;
+      for (gy = 0; gy < rows; gy += 1) {
+        for (gx = x0; gx < x1; gx += 1) {
+          sum += weights[gy * cols + gx];
+        }
+      }
+      var cells = Math.max(1, (x1 - x0) * rows);
+      bars[b] = sum / cells;
+    }
+    var maxB = 0;
+    for (b = 0; b < numBars; b += 1) {
+      if (bars[b] > maxB) maxB = bars[b];
+    }
+    if (maxB <= 0) {
+      for (b = 0; b < numBars; b += 1) {
+        bars[b] = 0.15;
+      }
+      return bars;
+    }
+    for (b = 0; b < numBars; b += 1) {
+      bars[b] = bars[b] / maxB;
+    }
+    return bars;
+  }
+
+  function buildMobileProcStructureLabels(weights, cols, rows, blobInfo) {
+    var chips = [];
+    var b = blobInfo.blobs;
+    if (b <= 0) {
+      chips.push("No strong density peaks");
+    } else {
+      chips.push("Salient regions ×" + Math.min(b, 14));
+    }
+
+    var mid = cols / 2;
+    var left = 0;
+    var right = 0;
+    var lc = 0;
+    var rc = 0;
+    var gx;
+    var gy;
+    for (gy = 0; gy < rows; gy += 1) {
+      for (gx = 0; gx < cols; gx += 1) {
+        var w0 = weights[gy * cols + gx];
+        if (gx < mid) {
+          left += w0;
+          lc += 1;
+        } else {
+          right += w0;
+          rc += 1;
+        }
+      }
+    }
+    var lMean = lc ? left / lc : 0;
+    var rMean = rc ? right / rc : 0;
+    if (lMean > rMean * 1.16) {
+      chips.push("Left-weighted density");
+    } else if (rMean > lMean * 1.16) {
+      chips.push("Right-weighted density");
+    }
+
+    var tThird = Math.max(1, Math.floor(rows / 3));
+    var top = 0;
+    var bot = 0;
+    var tc = 0;
+    var bc = 0;
+    for (gy = 0; gy < rows; gy += 1) {
+      for (gx = 0; gx < cols; gx += 1) {
+        var w1 = weights[gy * cols + gx];
+        if (gy < tThird) {
+          top += w1;
+          tc += 1;
+        } else if (gy >= rows - tThird) {
+          bot += w1;
+          bc += 1;
+        }
+      }
+    }
+    var tMean = tc ? top / tc : 0;
+    var bMean = bc ? bot / bc : 0;
+    if (tMean > bMean * 1.14) {
+      chips.push("Upper-field detail");
+    } else if (bMean > tMean * 1.14) {
+      chips.push("Lower-plane emphasis");
+    }
+
+    var v = varianceOfWeights(weights);
+    if (v > 0.035) {
+      chips.push("High local contrast");
+    } else if (v < 0.012) {
+      chips.push("Smooth / uniform tone");
+    }
+
+    var hiFrac = 0;
+    var tot = weights.length;
+    var ii;
+    for (ii = 0; ii < tot; ii += 1) {
+      if (weights[ii] >= blobInfo.thr) hiFrac += 1;
+    }
+    hiFrac /= Math.max(1, tot);
+    if (hiFrac > 0.38) {
+      chips.push("Busy / cluttered field");
+    } else if (hiFrac < 0.14) {
+      chips.push("Sparse composition");
+    }
+
+    return chips.slice(0, 7);
+  }
+
+  function setMobileProcessingLogComplete(done) {
+    var rows = document.querySelectorAll("#mobile-processing .processing-item");
+    if (rows.length < 3) return;
+    var last = rows[2];
+    var dot = last.querySelector(".processing-dot");
+    var label = last.querySelectorAll("span")[1];
+    if (done) {
+      if (dot) {
+        dot.classList.remove("active");
+        dot.classList.add("done");
+      }
+      if (label) {
+        label.style.color = "var(--gray3)";
+      }
+      var mark = last.querySelectorAll("span")[2];
+      if (mark) mark.textContent = "✓";
+    } else {
+      if (dot) {
+        dot.classList.add("active");
+        dot.classList.remove("done");
+      }
+      if (label) {
+        label.style.color = "var(--ink)";
+      }
+      var mark2 = last.querySelectorAll("span")[2];
+      if (mark2) mark2.textContent = "";
+    }
+  }
+
+  function renderMobileProcAnalysis(dataUrl) {
+    var chipsHost = document.getElementById("mobile-proc-objects");
+    var barsHost = document.getElementById("mobile-proc-density-bars");
+    if (!chipsHost || !barsHost) return;
+
+    function showEmpty() {
+      chipsHost.innerHTML =
+        '<span class="mobile-proc-chip mobile-proc-chip--muted">Upload a desk photo to analyze structure</span>';
+      var i;
+      var h = "";
+      for (i = 0; i < 12; i += 1) {
+        h +=
+          '<span class="mobile-proc-bar" style="height:18%;opacity:0.22"></span>';
+      }
+      barsHost.innerHTML = h;
+      state.mobileInferredObjectCount = null;
+      setMobileProcessingLogComplete(false);
+    }
+
+    if (!dataUrl) {
+      showEmpty();
+      return;
+    }
+
+    setMobileProcessingLogComplete(false);
+    chipsHost.innerHTML =
+      '<span class="mobile-proc-chip mobile-proc-chip--muted">Analyzing…</span>';
+    barsHost.innerHTML = "";
+
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var grid = sampleImageToDensityGrid(img, 42, 30);
+        var w = grid.weights;
+        var cols = grid.cols;
+        var rows = grid.rows;
+        var blobInfo = countDensityBlobs(w, cols, rows);
+        var labels = buildMobileProcStructureLabels(w, cols, rows, blobInfo);
+        chipsHost.innerHTML = labels
+          .map(function (t) {
+            return (
+              '<span class="mobile-proc-chip">' + escapeHtmlMini(t) + "</span>"
+            );
+          })
+          .join("");
+
+        var bars = columnDensityHistogram(w, cols, rows, 12);
+        var bh = "";
+        var bi;
+        for (bi = 0; bi < bars.length; bi += 1) {
+          var hPct = Math.max(14, Math.round(bars[bi] * 100));
+          var op = 0.32 + bars[bi] * 0.58;
+          bh +=
+            '<span class="mobile-proc-bar" style="height:' +
+            hPct +
+            "%;opacity:" +
+            op +
+            '"></span>';
+        }
+        barsHost.innerHTML = bh;
+
+        var est = Math.max(
+          2,
+          Math.min(12, blobInfo.blobs + Math.round(blobInfo.avg * 4))
+        );
+        state.mobileInferredObjectCount = est;
+        setMobileProcessingLogComplete(true);
+      } catch (err) {
+        chipsHost.innerHTML =
+          '<span class="mobile-proc-chip mobile-proc-chip--muted">Could not read image analysis</span>';
+        var j;
+        var eh = "";
+        for (j = 0; j < 12; j += 1) {
+          eh +=
+            '<span class="mobile-proc-bar" style="height:18%;opacity:0.22"></span>';
+        }
+        barsHost.innerHTML = eh;
+        state.mobileInferredObjectCount = null;
+        setMobileProcessingLogComplete(false);
+      }
+    };
+    img.onerror = function () {
+      showEmpty();
+    };
+    img.src = dataUrl;
   }
 
   function drawPointCloudFromDensityGrid(canvas, grid, pointCount, variant) {
@@ -1595,29 +1903,15 @@
     syncMobileCaptureContinueEnabled();
   }
 
-  function syncProcessingPhoto() {
-    var img = document.getElementById("mobile-proc-photo-img");
-    var ph = document.getElementById("mobile-proc-photo-placeholder");
-    if (!img || !ph) return;
-    if (state.uploadedImage) {
-      setImgDataUrl(img, state.uploadedImage);
-      img.classList.remove("hidden");
-      ph.classList.add("hidden");
-    } else {
-      img.classList.add("hidden");
-      ph.classList.remove("hidden");
-    }
-  }
-
   function refreshMobileProcessingSpatial() {
     var pc = document.getElementById("canvas-mobile-proc-pc");
     if (!pc) return;
     if (state.uploadedImage) {
-      drawPointCloudPortableFromImage(pc, state.uploadedImage, 110);
+      drawPointCloudPortableFromImage(pc, state.uploadedImage, 128);
     } else {
       drawPointCloudPortable(pc, "mobile-proc", 90);
     }
-    syncProcessingPhoto();
+    renderMobileProcAnalysis(state.uploadedImage);
   }
 
   function syncLogFocusUi() {
@@ -1854,7 +2148,10 @@
       focus: state.focusLevel,
       mood: state.selectedMood,
       light: state.selectedLighting,
-      objects: 4 + Math.floor(Math.random() * 3),
+      objects:
+        state.mobileInferredObjectCount != null && state.mobileInferredObjectCount > 0
+          ? state.mobileInferredObjectCount
+          : 4 + Math.floor(Math.random() * 3),
       notes: notesEl ? notesEl.value : "",
       photoDataUrl: null,
       scanImageDataUrl: null,
@@ -1881,6 +2178,7 @@
           return;
         }
         state.uploadedImage = null;
+        state.mobileInferredObjectCount = null;
         state.mobileStack = [];
         buildDeskArchiveRows();
         updateDeskArchiveMeta();
@@ -2607,7 +2905,6 @@
         r.onload = function () {
           state.uploadedImage = r.result;
           syncCaptureThumb();
-          syncProcessingPhoto();
           syncMobileCaptureContinueEnabled();
           if (getActiveMobileScreen() === "processing") {
             refreshMobileProcessingSpatial();
@@ -2685,7 +2982,6 @@
         if (lr) lr.value = String(state.focusLevel);
         syncLogFocusUi();
         syncCaptureThumb();
-        syncProcessingPhoto();
         syncMobileCaptureContinueEnabled();
         showMobileScreen("capture");
       });
