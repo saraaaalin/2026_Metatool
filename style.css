@@ -977,14 +977,40 @@ label.mobile-upload-label {
 
 .desk-spatial-stack--scan-only {
   width: 100%;
-  max-width: 720px;
+  max-width: 620px;
   margin-left: auto;
   margin-right: auto;
+  margin-top: 100px;
+  border: none;
+  background: transparent;
+  gap: 0;
+}
+
+.desk-spatial-stack--scan-only .desk-spatial-stack__cloud {
+  background: transparent;
+}
+
+.desk-spatial-stack--scan-only .desk-spatial-stack__cloud--scan {
+  border: none;
+  background: transparent;
+}
+
+.desk-spatial-stack--scan-only .desk-spatial-stack__label {
+  display: none;
+}
+
+.desk-spatial-stack--scan-only .desk-spatial-stack__canvas-wrap {
+  padding: 0;
+  background: transparent;
+}
+
+.desk-spatial-stack--scan-only .desk-spatial-stack__canvas-wrap canvas {
+  box-shadow: 0 22px 46px rgba(12, 12, 12, 0.2);
 }
 
 .desk-spatial-stack--wide .desk-spatial-stack__canvas-wrap {
-  min-height: 280px;
-  max-height: min(58vh, 540px);
+  min-height: 220px;
+  max-height: min(52vh, 460px);
 }
 
 .desk-spatial-step__actions {
@@ -992,7 +1018,7 @@ label.mobile-upload-label {
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
-  margin-top: 4px;
+  margin-top: 150px;
 }
 
 .desk-spatial-step__text .desk-guidance-grid--two {
