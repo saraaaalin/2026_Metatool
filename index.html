@@ -440,6 +440,9 @@
           <div>
             <div class="desk-caption" style="margin-bottom:6px">Portable Attention Box</div>
             <h2>Attention Archive</h2>
+            <div class="desk-archive__subcta" style="margin-top:10px">
+              <a href="#new-entry" class="desk-btn desk-btn--primary desk-btn--compact" data-desk-nav="new-entry">+ New entry</a>
+            </div>
           </div>
           <div class="desk-archive__meta">
             <div>
@@ -453,13 +456,13 @@
           </div>
         </div>
         <div class="desk-filter-bar">
-          <button type="button" class="is-active">All</button>
-          <button type="button">High Focus (80+)</button>
-          <button type="button">Low Focus (&lt;60)</button>
-          <button type="button">This Week</button>
-          <button type="button">Calm</button>
-          <button type="button">Focused</button>
-          <button type="button" class="desk-sort">↕ SORT</button>
+          <button type="button" class="is-active" data-desk-archive-filter="all">All</button>
+          <button type="button" data-desk-archive-filter="high">High Focus (80+)</button>
+          <button type="button" data-desk-archive-filter="low">Low Focus (&lt;60)</button>
+          <button type="button" data-desk-archive-filter="week">This Week</button>
+          <button type="button" data-desk-archive-filter="calm">Calm</button>
+          <button type="button" data-desk-archive-filter="focused">Focused</button>
+          <button type="button" class="desk-sort" id="desk-archive-sort">↕ NEWEST</button>
         </div>
         <div class="desk-archive-toolbar">
           <p class="desk-archive-toolbar__help">
@@ -522,8 +525,8 @@
             <div style="height:1px;background:var(--gray1)"></div>
             <div>
               <div class="desk-caption" style="margin-bottom:8px">Date Range</div>
-              <div class="desk-chip-row">
-                <button type="button" class="is-on">All Time</button><button type="button">Last Month</button><button type="button">Last Week</button>
+              <div class="desk-chip-row" data-desk-chip-group="recall-date">
+                <button type="button" class="is-on" data-desk-recall-date>All Time</button><button type="button" data-desk-recall-date>Last Month</button><button type="button" data-desk-recall-date>Last Week</button>
               </div>
             </div>
             <button type="button" class="desk-recall__cta" id="desk-btn-find-recall"><span>Find Matching Configurations</span><span style="opacity:.5">⌕</span></button>
@@ -739,6 +742,13 @@
             <div style="height:2px;flex:1;background:var(--gray1)"></div>
             <span style="font-size:8px;letter-spacing:0.15em;color:var(--gray3);margin-left:6px">2/4</span>
           </div>
+          <div style="padding:0 20px 8px">
+            <label class="btn-ghost mobile-upload-label mobile-proc-replace-label" style="padding:8px 14px;margin:0;display:inline-flex;align-items:center;gap:8px;width:auto;max-width:100%">
+              <input type="file" id="mobile-proc-replace-input" accept="image/*" class="mobile-upload-label__input" aria-label="Replace desk photo" />
+              <span class="mobile-upload-label__face" style="font-size:9px;letter-spacing:0.08em">Replace photo</span>
+              <span class="mobile-upload-label__face" style="opacity:0.4;font-size:11px">↑</span>
+            </label>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:8px 20px;border:1px solid var(--gray1)">
             <div style="position:relative" id="mobile-proc-photo-cell">
               <img id="mobile-proc-photo-img" alt="" class="hidden" style="display:block;width:174px;height:200px;object-fit:cover" />
@@ -896,25 +906,28 @@
               </svg>
             </div>
           </div>
-          <div style="padding:12px 20px;border-bottom:1px solid var(--gray1);display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="font-size:8px;letter-spacing:0.2em;color:var(--gray3);text-transform:uppercase;margin-bottom:2px">Portable Attention Box</div>
-              <div style="font-size:16px;font-weight:500;letter-spacing:-0.01em">Attention Archive</div>
-            </div>
-            <div style="text-align:right">
-              <div id="mobile-archive-count" style="font-size:22px;font-weight:500">41</div>
-              <div style="font-size:8px;letter-spacing:0.1em;color:var(--gray3)">records</div>
+          <div class="nav-bar">
+            <button type="button" class="back-btn" id="mobile-archive-back-home">← Home</button>
+            <span class="screen-title">Archive</span>
+            <div style="text-align:right;line-height:1.2">
+              <div id="mobile-archive-count" style="font-size:15px;font-weight:500">0</div>
+              <div style="font-size:7px;letter-spacing:0.08em;color:var(--gray3)">records</div>
             </div>
           </div>
+          <div style="padding:10px 20px 0">
+            <button type="button" class="btn-primary" style="width:100%;margin-bottom:10px" data-mobile-go="capture"><span>Add new record</span><span style="opacity:0.5">+</span></button>
+          </div>
           <div style="padding:8px 20px;display:flex;gap:5px;border-bottom:1px solid var(--gray1);flex-wrap:wrap">
-            <button type="button" class="chip active" style="font-size:7px;padding:3px 7px">All</button>
-            <button type="button" class="chip" style="font-size:7px;padding:3px 7px">High Focus</button>
-            <button type="button" class="chip" style="font-size:7px;padding:3px 7px">Low Focus</button>
-            <button type="button" class="chip" style="font-size:7px;padding:3px 7px">This Week</button>
+            <button type="button" class="chip active" style="font-size:7px;padding:3px 7px" data-mobile-archive-filter="all">All</button>
+            <button type="button" class="chip" style="font-size:7px;padding:3px 7px" data-mobile-archive-filter="high">High Focus</button>
+            <button type="button" class="chip" style="font-size:7px;padding:3px 7px" data-mobile-archive-filter="low">Low Focus</button>
+            <button type="button" class="chip" style="font-size:7px;padding:3px 7px" data-mobile-archive-filter="week">This Week</button>
+            <button type="button" class="chip" style="font-size:7px;padding:3px 7px" data-mobile-archive-filter="calm">Calm</button>
+            <button type="button" class="chip" style="font-size:7px;padding:3px 7px" data-mobile-archive-filter="focused">Focused</button>
             <button type="button" class="chip" style="font-size:7px;padding:3px 7px" data-mobile-go="recall">Recall</button>
           </div>
           <div style="overflow-y:auto;flex:1;padding-top:12px;display:flex;flex-direction:column;gap:8px;min-height:0" id="mobile-archive-list"></div>
-          <button type="button" class="btn-ghost" style="margin:4px 20px 20px;width:calc(100% - 40px)" id="mobile-btn-load-earlier"><span>Load Earlier Records</span><span style="opacity:0.4">↓</span></button>
+          <button type="button" class="btn-ghost" style="margin:4px 20px 16px;width:calc(100% - 40px)" id="mobile-btn-load-earlier"><span>Load Earlier Records</span><span style="opacity:0.4">↓</span></button>
         </div>
       </section>
 
@@ -1050,9 +1063,16 @@
               <div id="mobile-detail-focus-bar" style="position:absolute;left:0;top:0;height:100%;width:88%;background:var(--ink)"></div>
             </div>
           </div>
-          <button type="button" class="btn-primary" style="margin-top:auto" id="mobile-btn-recreate"><span>Recreate This Setup</span><span style="opacity:0.5">↻</span></button>
+          <button type="button" class="btn-ghost mobile-detail-delete" style="margin-top:auto;margin-bottom:8px;border-color:rgba(12,12,12,0.25)" id="mobile-btn-delete-record"><span>Delete record</span><span style="opacity:0.45">⌫</span></button>
+          <button type="button" class="btn-primary" id="mobile-btn-recreate"><span>Recreate This Setup</span><span style="opacity:0.5">↻</span></button>
         </div>
       </section>
+      <nav class="mobile-tab-bar" aria-label="Main navigation">
+        <button type="button" class="mobile-tab-bar__btn is-active" data-mobile-tab="home"><span class="mobile-tab-bar__lbl">Home</span></button>
+        <button type="button" class="mobile-tab-bar__btn" data-mobile-tab="new-entry"><span class="mobile-tab-bar__lbl">New</span></button>
+        <button type="button" class="mobile-tab-bar__btn" data-mobile-tab="archive"><span class="mobile-tab-bar__lbl">Archive</span></button>
+        <button type="button" class="mobile-tab-bar__btn" data-mobile-tab="recall"><span class="mobile-tab-bar__lbl">Recall</span></button>
+      </nav>
     </div>
   </div>
 

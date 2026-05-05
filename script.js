@@ -70,6 +70,9 @@
     selectedRecord: null,
     deskEntryStep: 1,
     deskDraftStarted: false,
+    /** Shared archive list filter (desktop table + mobile cards). */
+    archiveFilter: "all",
+    archiveSortNewestFirst: true,
   };
 
   function seedInitialRecords() {
@@ -975,12 +978,73 @@
     return on ? on.textContent.trim() : "Bright";
   }
 
+  function getDeskRecallDateCutoffMs() {
+    var g = document.querySelector('[data-desk-chip-group="recall-date"]');
+    var on = g && g.querySelector("button.is-on");
+    var label = on ? on.textContent.trim() : "All Time";
+    var now = Date.now();
+    if (label.indexOf("Week") >= 0) return now - 7 * 86400000;
+    if (label.indexOf("Month") >= 0) return now - 30 * 86400000;
+    return 0;
+  }
+
+  function applyArchiveFilter(list, filterKey) {
+    var key = filterKey || "all";
+    var now = Date.now();
+    var weekAgo = now - 7 * 86400000;
+    if (key === "high") {
+      return list.filter(function (r) {
+        return Number(r.focus) >= 80;
+      });
+    }
+    if (key === "low") {
+      return list.filter(function (r) {
+        return Number(r.focus) < 60;
+      });
+    }
+    if (key === "week") {
+      return list.filter(function (r) {
+        return (r.createdAt || 0) >= weekAgo;
+      });
+    }
+    if (key === "calm") {
+      return list.filter(function (r) {
+        return String(r.mood || "")
+          .toLowerCase()
+          .indexOf("calm") >= 0;
+      });
+    }
+    if (key === "focused") {
+      return list.filter(function (r) {
+        return String(r.mood || "")
+          .toLowerCase()
+          .indexOf("focused") >= 0;
+      });
+    }
+    return list.slice();
+  }
+
+  function syncArchiveFilterUi() {
+    var key = state.archiveFilter || "all";
+    document.querySelectorAll("[data-desk-archive-filter]").forEach(function (b) {
+      var k = b.getAttribute("data-desk-archive-filter") || "all";
+      b.classList.toggle("is-active", k === key);
+    });
+    document.querySelectorAll("[data-mobile-archive-filter]").forEach(function (b) {
+      var k = b.getAttribute("data-mobile-archive-filter") || "all";
+      b.classList.toggle("active", k === key);
+    });
+  }
+
   function computeDeskMatches() {
     var range = document.getElementById("desk-recall-focus-range");
     var target = range ? Number(range.value) : 85;
     var moodF = getDeskRecallMoodFilter();
     var lightF = getDeskRecallLightFilter();
-    var all = getAllRecords();
+    var cutoff = getDeskRecallDateCutoffMs();
+    var all = getAllRecords().filter(function (r) {
+      return (r.createdAt || 0) >= cutoff;
+    });
     var scored = all.map(function (r) {
       var pen = Math.abs(r.focus - target) * 1.15;
       if (moodF !== "Any" && r.mood !== moodF) pen += 22;
@@ -1074,6 +1138,12 @@
     if (cur && skip[cur.id]) {
       closeDeskDetail();
       state.selectedRecord = null;
+      var isMobile =
+        typeof window.matchMedia === "function" &&
+        !window.matchMedia("(min-width: 769px)").matches;
+      if (isMobile && getActiveMobileScreen() === "detail") {
+        showMobileScreen("archive");
+      }
     }
     var allCb = document.getElementById("desk-archive-select-all");
     if (allCb) {
@@ -1104,8 +1174,11 @@
     host.innerHTML = "";
     var list = getAllRecords().slice();
     list.sort(function (a, b) {
-      return (b.createdAt || 0) - (a.createdAt || 0);
+      var ta = a.createdAt || 0;
+      var tb = b.createdAt || 0;
+      return state.archiveSortNewestFirst ? tb - ta : ta - tb;
     });
+    list = applyArchiveFilter(list, state.archiveFilter);
     list.forEach(function (r, idx) {
       var row = document.createElement("div");
       row.className = "desk-table-row";
@@ -1245,7 +1318,10 @@
     var host = document.getElementById("mobile-archive-list");
     if (!host) return;
     host.innerHTML = "";
-    var records = getRecordsForDisplayMobile();
+    var records = applyArchiveFilter(
+      getRecordsForDisplayMobile(),
+      state.archiveFilter
+    );
     var countEl = document.getElementById("mobile-archive-count");
     if (countEl) countEl.textContent = String(records.length);
     records.forEach(function (r, i) {
@@ -1284,9 +1360,22 @@
         r.mood +
         " · " +
         r.light +
-        "</div></div>";
+        '</div><button type="button" class="mobile-archive-delete" data-mobile-archive-delete="">Delete</button></div>';
       host.appendChild(card);
-      card.addEventListener("click", function () {
+      card.addEventListener("click", function (e) {
+        if (e.target.closest("[data-mobile-archive-delete]")) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (
+            !window.confirm(
+              "Delete this record from this device? This cannot be undone."
+            )
+          ) {
+            return;
+          }
+          removeDeskArchiveRecordsByIds([r.id]);
+          return;
+        }
         state.selectedRecord = r;
         navigateMobileForward("detail");
       });
@@ -1437,7 +1526,7 @@
     if (dt) dt.textContent = rec.date + " — " + rec.time;
     if (badge) badge.textContent = rec.focus + "% focus";
     if (rec.photoDataUrl && img && fb) {
-      img.src = rec.photoDataUrl;
+      setImgDataUrl(img, rec.photoDataUrl);
       img.classList.remove("hidden");
       fb.classList.add("hidden");
     } else if (img && fb) {
@@ -1461,7 +1550,7 @@
     var scanMob = document.getElementById("mobile-detail-scan-img");
     var dc = document.getElementById("canvas-mobile-detail-pc");
     if (rec.scanImageDataUrl && scanMob) {
-      scanMob.src = rec.scanImageDataUrl;
+      setImgDataUrl(scanMob, rec.scanImageDataUrl);
       scanMob.classList.remove("hidden");
       if (dc) dc.classList.add("hidden");
     } else {
@@ -1476,18 +1565,34 @@
     }
   }
 
+  /** Clear src first so replacing with the same file still reloads (mobile Safari). */
+  function setImgDataUrl(img, dataUrl) {
+    if (!img) return;
+    img.removeAttribute("src");
+    if (dataUrl) {
+      img.src = dataUrl;
+    }
+  }
+
+  function syncMobileCaptureContinueEnabled() {
+    var takeBtn = document.getElementById("mobile-btn-take-photo");
+    if (!takeBtn) return;
+    takeBtn.disabled = !state.uploadedImage;
+  }
+
   function syncCaptureThumb() {
     var img = document.getElementById("mobile-capture-ref-img");
     var fb = document.getElementById("mobile-capture-ref-fallback");
     if (!img || !fb) return;
     if (state.uploadedImage) {
-      img.src = state.uploadedImage;
+      setImgDataUrl(img, state.uploadedImage);
       img.classList.remove("hidden");
       fb.classList.add("hidden");
     } else {
       img.classList.add("hidden");
       fb.classList.remove("hidden");
     }
+    syncMobileCaptureContinueEnabled();
   }
 
   function syncProcessingPhoto() {
@@ -1495,13 +1600,24 @@
     var ph = document.getElementById("mobile-proc-photo-placeholder");
     if (!img || !ph) return;
     if (state.uploadedImage) {
-      img.src = state.uploadedImage;
+      setImgDataUrl(img, state.uploadedImage);
       img.classList.remove("hidden");
       ph.classList.add("hidden");
     } else {
       img.classList.add("hidden");
       ph.classList.remove("hidden");
     }
+  }
+
+  function refreshMobileProcessingSpatial() {
+    var pc = document.getElementById("canvas-mobile-proc-pc");
+    if (!pc) return;
+    if (state.uploadedImage) {
+      drawPointCloudPortableFromImage(pc, state.uploadedImage, 110);
+    } else {
+      drawPointCloudPortable(pc, "mobile-proc", 90);
+    }
+    syncProcessingPhoto();
   }
 
   function syncLogFocusUi() {
@@ -2169,25 +2285,36 @@
     }
   }
 
+  function syncMobileTabBar(name) {
+    var home = name === "landing";
+    var neu = name === "capture" || name === "processing" || name === "log";
+    var arch = name === "archive" || name === "detail";
+    var rec = name === "recall";
+    document.querySelectorAll("[data-mobile-tab]").forEach(function (btn) {
+      var t = btn.getAttribute("data-mobile-tab");
+      var on =
+        (t === "home" && home) ||
+        (t === "new-entry" && neu) ||
+        (t === "archive" && arch) ||
+        (t === "recall" && rec);
+      btn.classList.toggle("is-active", !!on);
+    });
+  }
+
   function showMobileScreen(name) {
     document.querySelectorAll(".mobile-screen").forEach(function (el) {
       el.classList.toggle("is-active", el.getAttribute("data-mobile-screen") === name);
     });
     var phone = document.getElementById("phone-root");
     if (phone) phone.classList.toggle("phone--landing", name === "landing");
+    syncMobileTabBar(name);
 
     if (name === "landing") {
       var lc = document.getElementById("canvas-mobile-landing-pc");
       if (lc) drawPointCloudPortable(lc, "mobile-landing", 180);
     }
     if (name === "processing") {
-      var pc = document.getElementById("canvas-mobile-proc-pc");
-      if (pc && state.uploadedImage) {
-        drawPointCloudPortableFromImage(pc, state.uploadedImage, 110);
-      } else if (pc) {
-        drawPointCloudPortable(pc, "mobile-proc", 90);
-      }
-      syncProcessingPhoto();
+      refreshMobileProcessingSpatial();
     }
     if (name === "log") {
       prepareDraftLogUi();
@@ -2230,6 +2357,16 @@
         btn.classList.add("is-on");
       });
     });
+    document.querySelectorAll("[data-desk-recall-date]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var row = btn.closest("[data-desk-chip-group]");
+        if (!row) return;
+        row.querySelectorAll("[data-desk-recall-date]").forEach(function (b) {
+          b.classList.remove("is-on");
+        });
+        btn.classList.add("is-on");
+      });
+    });
   }
 
   function init() {
@@ -2242,6 +2379,60 @@
     buildMobileRecallList(computeMobileMatches());
 
     bindDeskRecallChips();
+
+    document.querySelectorAll("[data-desk-archive-filter]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.archiveFilter = btn.getAttribute("data-desk-archive-filter") || "all";
+        buildDeskArchiveRows();
+        buildMobileArchiveList();
+        syncArchiveFilterUi();
+      });
+    });
+    var deskArchSort = document.getElementById("desk-archive-sort");
+    if (deskArchSort) {
+      deskArchSort.addEventListener("click", function () {
+        state.archiveSortNewestFirst = !state.archiveSortNewestFirst;
+        deskArchSort.textContent = state.archiveSortNewestFirst ? "↕ NEWEST" : "↕ OLDEST";
+        buildDeskArchiveRows();
+      });
+    }
+
+    document.querySelectorAll("[data-mobile-archive-filter]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        state.archiveFilter = btn.getAttribute("data-mobile-archive-filter") || "all";
+        buildDeskArchiveRows();
+        buildMobileArchiveList();
+        syncArchiveFilterUi();
+      });
+    });
+
+    document.querySelectorAll("[data-mobile-tab]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var t = btn.getAttribute("data-mobile-tab");
+        if (t === "home") {
+          state.mobileStack = [];
+          showMobileScreen("landing");
+        } else if (t === "new-entry") {
+          state.mobileStack = ["landing"];
+          showMobileScreen("capture");
+        } else if (t === "archive") {
+          state.mobileStack = ["landing"];
+          showMobileScreen("archive");
+        } else if (t === "recall") {
+          state.mobileStack = ["landing", "archive"];
+          showMobileScreen("recall");
+        }
+      });
+    });
+
+    var mobArchHome = document.getElementById("mobile-archive-back-home");
+    if (mobArchHome) {
+      mobArchHome.addEventListener("click", function () {
+        state.mobileStack = [];
+        showMobileScreen("landing");
+      });
+    }
 
     var deskRange = document.getElementById("desk-recall-focus-range");
     if (deskRange) {
@@ -2410,11 +2601,35 @@
       photoInput.addEventListener("change", function (e) {
         var f = e.target.files && e.target.files[0];
         if (!f || !/^image\//.test(f.type)) return;
+        var takeBtn0 = document.getElementById("mobile-btn-take-photo");
+        if (takeBtn0) takeBtn0.disabled = true;
         var r = new FileReader();
         r.onload = function () {
           state.uploadedImage = r.result;
           syncCaptureThumb();
           syncProcessingPhoto();
+          syncMobileCaptureContinueEnabled();
+          if (getActiveMobileScreen() === "processing") {
+            refreshMobileProcessingSpatial();
+          }
+        };
+        r.onerror = function () {
+          syncMobileCaptureContinueEnabled();
+        };
+        r.readAsDataURL(f);
+        e.target.value = "";
+      });
+    }
+    var procReplaceInput = document.getElementById("mobile-proc-replace-input");
+    if (procReplaceInput) {
+      procReplaceInput.addEventListener("change", function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f || !/^image\//.test(f.type)) return;
+        var r = new FileReader();
+        r.onload = function () {
+          state.uploadedImage = r.result;
+          syncCaptureThumb();
+          refreshMobileProcessingSpatial();
         };
         r.readAsDataURL(f);
         e.target.value = "";
@@ -2423,6 +2638,10 @@
     var takeBtn = document.getElementById("mobile-btn-take-photo");
     if (takeBtn) {
       takeBtn.addEventListener("click", function () {
+        if (!state.uploadedImage) {
+          window.alert("Upload a desk photo first (library or camera roll).");
+          return;
+        }
         navigateMobileForward("processing");
       });
     }
@@ -2467,7 +2686,24 @@
         syncLogFocusUi();
         syncCaptureThumb();
         syncProcessingPhoto();
+        syncMobileCaptureContinueEnabled();
         showMobileScreen("capture");
+      });
+    }
+
+    var mobDelRec = document.getElementById("mobile-btn-delete-record");
+    if (mobDelRec) {
+      mobDelRec.addEventListener("click", function () {
+        var rec = state.selectedRecord;
+        if (!rec) return;
+        if (
+          !window.confirm(
+            "Delete this record from this device? This cannot be undone."
+          )
+        ) {
+          return;
+        }
+        removeDeskArchiveRecordsByIds([rec.id]);
       });
     }
 
@@ -2554,7 +2790,10 @@
       showDeskPage(getDeskSectionFromHash());
     } else {
       showMobileScreen("landing");
+      syncMobileCaptureContinueEnabled();
     }
+
+    syncArchiveFilterUi();
 
     var c0 = document.getElementById("canvas-desk-home-cloud");
     if (c0 && window.matchMedia("(min-width: 769px)").matches) {

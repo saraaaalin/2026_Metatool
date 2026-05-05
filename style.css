@@ -134,6 +134,52 @@ body {
   flex-direction: column;
 }
 
+.shell-mobile .mobile-screen > .screen-content {
+  padding-bottom: 56px;
+  box-sizing: border-box;
+}
+
+.mobile-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 390px;
+  display: flex;
+  border-top: 1px solid var(--gray1);
+  background: rgba(248, 247, 245, 0.94);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  z-index: 40;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.mobile-tab-bar__btn {
+  flex: 1;
+  margin: 0;
+  border: none;
+  background: transparent;
+  padding: 11px 6px 13px;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray3);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mobile-tab-bar__btn.is-active {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.mobile-tab-bar__lbl {
+  display: block;
+  pointer-events: none;
+}
+
 .status-bar {
   display: flex;
   justify-content: space-between;
@@ -218,6 +264,11 @@ body {
   touch-action: manipulation;
   position: relative;
   z-index: 1;
+}
+
+.btn-primary:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
 }
 
 .btn-ghost {
@@ -378,6 +429,32 @@ label.mobile-upload-label {
   background: var(--paper);
   margin: 0 20px;
   cursor: pointer;
+}
+
+.mobile-archive-delete {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 0 0;
+  border: none;
+  border-top: 1px solid var(--gray1);
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gray3);
+  cursor: pointer;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.mobile-archive-delete:active {
+  color: var(--ink);
+}
+
+label.mobile-proc-replace-label {
+  width: 100%;
 }
 
 .thumb-box {
@@ -716,6 +793,11 @@ label.mobile-upload-label {
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--gray1);
+}
+
+.desk-btn--compact {
+  padding: 8px 16px;
+  font-size: 9px;
 }
 
 .desk-home__flow {
