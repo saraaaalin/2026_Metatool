@@ -405,12 +405,16 @@
     if (!iw || !ih) {
       return { weights: new Float32Array(cols * rows).fill(1), cols: cols, rows: rows, totalWeight: cols * rows };
     }
-    var scale = Math.max(cols / iw, rows / ih);
-    var sw = cols / scale;
-    var sh = rows / scale;
-    var sx = Math.max(0, (iw - sw) / 2);
-    var sy = Math.max(0, (ih - sh) / 2);
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cols, rows);
+    /* Use contain-fit normalization (not cover-crop) so object scale stays
+       consistent across different photo aspect ratios. */
+    var scale = Math.min(cols / iw, rows / ih);
+    var dw = Math.max(1, Math.round(iw * scale));
+    var dh = Math.max(1, Math.round(ih * scale));
+    var dx = Math.round((cols - dw) / 2);
+    var dy = Math.round((rows - dh) / 2);
+    ctx.fillStyle = "rgb(238,238,236)";
+    ctx.fillRect(0, 0, cols, rows);
+    ctx.drawImage(img, 0, 0, iw, ih, dx, dy, dw, dh);
     var id = ctx.getImageData(0, 0, cols, rows);
     var data = id.data;
     var gray = new Float32Array(cols * rows);
@@ -477,6 +481,15 @@
         var variance = Math.max(0, sumSq / cnt - mean * mean);
         var e = mag[gy * cols + gx];
         var wgt = e * 0.62 + Math.sqrt(variance) * 0.38;
+        /* Suppress artificial contain-fit box edges: downweight near letterbox borders. */
+        var inImg = gx >= dx && gx < dx + dw && gy >= dy && gy < dy + dh;
+        if (!inImg) {
+          weights[gy * cols + gx] = 0.035;
+          continue;
+        }
+        var borderDist = Math.min(gx - dx, dx + dw - 1 - gx, gy - dy, dy + dh - 1 - gy);
+        var borderFade = Math.max(0, Math.min(1, borderDist / 2));
+        wgt *= 0.35 + 0.65 * borderFade;
         weights[gy * cols + gx] = wgt;
         if (wgt > maxW) maxW = wgt;
       }
@@ -695,8 +708,9 @@
       var cellX = idx % cols;
       var cellY = Math.floor(idx / cols);
       var dNorm = weights[idx] / (maxW + 1e-6);
-      var jx = ((rand() * 0.82 + 0.09) / cols) * jitterBoost * moodJ;
-      var jy = ((rand() * 0.82 + 0.09) / rows) * jitterBoost * moodJ;
+      /* Jitter in cell units (0..1), not in normalized grid units, to avoid row/column striping. */
+      var jx = Math.min(0.98, (rand() * 0.82 + 0.09) * jitterBoost * moodJ);
+      var jy = Math.min(0.98, (rand() * 0.82 + 0.09) * jitterBoost * moodJ);
       var px = ((cellX + jx) / cols) * cssW;
       var py = ((cellY + jy) / rows) * cssH;
       if (px < 0) px = 0;
