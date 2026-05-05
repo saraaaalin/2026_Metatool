@@ -7,6 +7,13 @@
 
   var STORAGE_KEY = "pab_records_v1";
 
+  /** Canonical spatial scan output (matches live step-05 canvas). */
+  var SPATIAL_SCAN_OUT_W = 720;
+  var SPATIAL_SCAN_OUT_H = 500;
+  /** Point budget scale for light “chart” spatial scan (circles + grid; capped in paint). */
+  var SPATIAL_PAINT_FILL_FACTOR = 0.011;
+  var SPATIAL_EXPORT_FILL_FACTOR = 0.016;
+
   var DESKTOP_RECORDS = [
     { id: "041", date: "Apr 12, 2025", time: "9:41am", focus: 72, mood: "Calm", light: "Soft", objects: 5 },
     { id: "040", date: "Apr 11, 2025", time: "8:15am", focus: 88, mood: "Focused", light: "Bright", objects: 5 },
@@ -62,6 +69,7 @@
     showEarlierMobile: false,
     selectedRecord: null,
     deskEntryStep: 1,
+    deskDraftStarted: false,
   };
 
   function seedInitialRecords() {
@@ -163,6 +171,7 @@
       }
       all.shift();
       rec.photoDataUrl = null;
+      rec.scanImageDataUrl = null;
       all.unshift(rec);
       try {
         saveRecordsToStorage(all);
@@ -584,32 +593,321 @@
 
   function drawPointCloudMetatoolFromImage(canvas, dataUrl, pointCount) {
     if (!canvas || !dataUrl) return;
-    var img = new Image();
-    img.onload = function () {
-      var cols = 56;
-      var rows = Math.max(28, Math.round(cols * (canvas.height / canvas.width)));
-      var grid = sampleImageToDensityGrid(img, cols, rows);
-      drawPointCloudFromDensityGrid(canvas, grid, pointCount || 160, "metatool");
-    };
-    img.onerror = function () {
-      drawPointCloudMetatool(canvas, "img-fallback", Math.min(130, pointCount || 130));
-    };
-    img.src = dataUrl;
+    drawSpatialScanFromImage(canvas, dataUrl, {
+      focus: state.focusLevel,
+      mood: getDeskLogMood(),
+      light: getDeskLogLight(),
+      pointCount: pointCount != null ? pointCount : null,
+    });
   }
 
   function drawPointCloudPortableFromImage(canvas, dataUrl, pointCount) {
     if (!canvas || !dataUrl) return;
+    drawSpatialScanFromImage(canvas, dataUrl, {
+      focus: state.focusLevel,
+      mood: state.selectedMood,
+      light: state.selectedLighting,
+      pointCount: pointCount != null ? pointCount : null,
+    });
+  }
+
+  /**
+   * Core paint: light grid + grayscale variable circles + faint links + center reticle.
+   * Still driven from sampleImageToDensityGrid (desk photo), not a raw threshold bitmap.
+   */
+  function paintSpatialScanFromLoadedImage(ctx, cssW, cssH, dpr, img, params) {
+    params = params || {};
+    var focus = Number(params.focus);
+    if (isNaN(focus)) focus = 72;
+    var mood = params.mood || "Calm";
+    var light = params.light || "Soft";
+    var pointOverride = params.pointCount != null ? params.pointCount : null;
+
+    var cols = Math.round(70 + (focus / 100) * 30);
+    var rows = Math.max(40, Math.round(cols * (cssH / cssW)));
+    var grid = sampleImageToDensityGrid(img, cols, rows);
+    var weights = grid.weights;
+    var totalWeight = grid.totalWeight || 1;
+    if (totalWeight <= 0) totalWeight = weights.length;
+    var maxW = 0;
+    var wi;
+    for (wi = 0; wi < weights.length; wi += 1) {
+      if (weights[wi] > maxW) maxW = weights[wi];
+    }
+
+    var rand = mulberry32(hashString(String(totalWeight) + mood + light + cols + "-" + cssW + "x" + cssH) || 1);
+    var focusNorm = focus / 100;
+    var jitterBoost = 0.88 + (1 - focusNorm) * 0.22;
+    var lowMood = String(mood).toLowerCase();
+    var moodJ = 1;
+    if (lowMood.indexOf("anxious") >= 0 || lowMood.indexOf("restless") >= 0) moodJ = 1.08;
+    else if (lowMood.indexOf("tired") >= 0) moodJ = 1.04;
+
+    var lightLower = String(light).toLowerCase();
+    var opBoost = 1;
+    if (lightLower.indexOf("bright") >= 0 || lightLower.indexOf("sun") >= 0) opBoost = 1.08;
+    else if (lightLower.indexOf("dim") >= 0) opBoost = 0.88;
+    else if (lightLower.indexOf("soft") >= 0) opBoost = 1;
+    else if (lightLower.indexOf("artificial") >= 0) opBoost = 0.94;
+
+    var nBase = Math.round(cssW * cssH * SPATIAL_PAINT_FILL_FACTOR);
+    var nPts = pointOverride != null
+      ? Math.min(9200, Math.max(3200, Math.round(pointOverride * 0.98)))
+      : Math.min(8200, Math.max(3000, nBase));
+
+    function pickCell() {
+      var t = rand() * totalWeight;
+      var acc = 0;
+      var k;
+      for (k = 0; k < weights.length; k += 1) {
+        acc += weights[k];
+        if (t <= acc) return k;
+      }
+      return weights.length - 1;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#f2f1ee";
+    ctx.fillRect(0, 0, cssW, cssH);
+
+    var gridStep = Math.max(16, Math.round(Math.min(cssW, cssH) / 26));
+    ctx.strokeStyle = "rgba(12,12,12,0.06)";
+    ctx.lineWidth = 0.5;
+    var gx;
+    var gy;
+    for (gy = 0; gy <= cssH; gy += gridStep) {
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(cssW, gy);
+      ctx.stroke();
+    }
+    for (gx = 0; gx <= cssW; gx += gridStep) {
+      ctx.beginPath();
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, cssH);
+      ctx.stroke();
+    }
+
+    var pts = [];
+    var i;
+    for (i = 0; i < nPts; i += 1) {
+      var idx = pickCell();
+      var cellX = idx % cols;
+      var cellY = Math.floor(idx / cols);
+      var dNorm = weights[idx] / (maxW + 1e-6);
+      var jx = ((rand() * 0.82 + 0.09) / cols) * jitterBoost * moodJ;
+      var jy = ((rand() * 0.82 + 0.09) / rows) * jitterBoost * moodJ;
+      var px = ((cellX + jx) / cols) * cssW;
+      var py = ((cellY + jy) / rows) * cssH;
+      if (px < 0) px = 0;
+      if (py < 0) py = 0;
+      if (px >= cssW) px = cssW - 1e-6;
+      if (py >= cssH) py = cssH - 1e-6;
+      var radius = 0.55 + dNorm * 2.65 + rand() * 0.55;
+      var opac = Math.min(0.9, (0.12 + dNorm * 0.62 + rand() * 0.12) * opBoost);
+      pts.push({ x: px, y: py, s: radius, o: opac, d: dNorm });
+    }
+
+    var edgeDist = Math.min(72, 0.14 * Math.min(cssW, cssH));
+    var edgeCap = Math.min(56, Math.round(36 + nPts * 0.004));
+    for (i = 0; i < Math.min(edgeCap, pts.length); i += 1) {
+      var j;
+      for (j = i + 1; j < Math.min(i + 4, pts.length); j += 1) {
+        var p = pts[i];
+        var q = pts[j];
+        var dist = Math.hypot(q.x - p.x, q.y - p.y);
+        if (dist < edgeDist) {
+          var da = p.d != null ? p.d : 0.5;
+          var db = q.d != null ? q.d : 0.5;
+          var edgeAlpha = 0.05 + 0.09 * Math.min(da, db);
+          ctx.strokeStyle = "rgba(12,12,12," + edgeAlpha + ")";
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    pts.forEach(function (p) {
+      ctx.fillStyle = "rgba(12,12,12," + p.o + ")";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    var cx = cssW * 0.5;
+    var cy = cssH * 0.5;
+    var ringR = Math.max(5, Math.min(cssW, cssH) * 0.014);
+    ctx.strokeStyle = "rgba(12,12,12,0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(12,12,12,0.85)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(1.2, ringR * 0.28), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /**
+   * Final spatial scan PNG (720×500 logical @ DPR) — same paint as live preview; use for archive only.
+   */
+  function exportSpatialScanToDataUrl(dataUrl, params, callback) {
+    if (!dataUrl || typeof dataUrl !== "string" || dataUrl.indexOf("data:image") !== 0) {
+      if (callback) callback(null);
+      return;
+    }
+    var cssW = SPATIAL_SCAN_OUT_W;
+    var cssH = SPATIAL_SCAN_OUT_H;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(cssW * dpr));
+    c.height = Math.max(1, Math.round(cssH * dpr));
+    var ctx = c.getContext("2d");
+    if (!ctx) {
+      if (callback) callback(null);
+      return;
+    }
     var img = new Image();
     img.onload = function () {
-      var cols = 48;
-      var rows = Math.max(26, Math.round(cols * (canvas.height / canvas.width)));
-      var grid = sampleImageToDensityGrid(img, cols, rows);
-      drawPointCloudFromDensityGrid(canvas, grid, pointCount || 100, "portable");
+      try {
+        var pc = Math.min(9200, Math.max(3600, Math.round(cssW * cssH * SPATIAL_EXPORT_FILL_FACTOR)));
+        var merged = {
+          focus: params && params.focus != null ? params.focus : 72,
+          mood: (params && params.mood) || "Calm",
+          light: (params && params.light) || "Soft",
+          pointCount: params && params.pointCount != null ? params.pointCount : pc,
+        };
+        paintSpatialScanFromLoadedImage(ctx, cssW, cssH, dpr, img, merged);
+        var url = c.toDataURL("image/png");
+        if (callback) callback(url || null);
+      } catch (err) {
+        if (callback) callback(null);
+      }
     };
     img.onerror = function () {
-      drawPointCloudPortable(canvas, "mobile-proc-fallback", Math.min(90, pointCount || 90));
+      if (callback) callback(null);
     };
     img.src = dataUrl;
+  }
+
+  /**
+   * Density-driven spatial scan on canvas: light grid + grayscale point cloud (image-sampled).
+   * Logical size = canvas width/height attributes (stable aspect).
+   */
+  function drawSpatialScanFromImage(canvas, dataUrl, params) {
+    if (!canvas || !dataUrl) return;
+    params = params || {};
+    var cssW = parseInt(canvas.getAttribute("width"), 10) || 400;
+    var cssH = parseInt(canvas.getAttribute("height"), 10) || 280;
+    var dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(cssW * dpr));
+    canvas.height = Math.max(1, Math.round(cssH * dpr));
+    canvas.style.width = cssW + "px";
+    canvas.style.height = cssH + "px";
+
+    var boot = canvas.getContext("2d");
+    if (!boot) return;
+    boot.setTransform(dpr, 0, 0, dpr, 0, 0);
+    boot.fillStyle = "#f2f1ee";
+    boot.fillRect(0, 0, cssW, cssH);
+
+    var img = new Image();
+    img.onload = function () {
+      var ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      paintSpatialScanFromLoadedImage(ctx, cssW, cssH, dpr, img, params);
+    };
+    img.onerror = function () {
+      var ctx2 = canvas.getContext("2d");
+      if (!ctx2) return;
+      ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx2.fillStyle = "#eae8e4";
+      ctx2.fillRect(0, 0, cssW, cssH);
+    };
+    img.src = dataUrl;
+  }
+
+  /** Scale saved scan image into a small canvas (legacy paths only). */
+  function drawSavedScanIntoCanvas(canvas, scanDataUrl) {
+    if (!canvas || !scanDataUrl) return;
+    var cw = parseInt(canvas.getAttribute("width"), 10) || 60;
+    var ch = parseInt(canvas.getAttribute("height"), 10) || 52;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var im = new Image();
+    im.onload = function () {
+      var ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      canvas.width = Math.max(1, Math.round(cw * dpr));
+      canvas.height = Math.max(1, Math.round(ch * dpr));
+      canvas.style.width = cw + "px";
+      canvas.style.height = ch + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = "#f2f1ee";
+      ctx.fillRect(0, 0, cw, ch);
+      var ir = im.width / im.height;
+      var cr = cw / ch;
+      var dw;
+      var dh;
+      var dx;
+      var dy;
+      if (ir > cr) {
+        dw = cw;
+        dh = cw / ir;
+        dx = 0;
+        dy = (ch - dh) / 2;
+      } else {
+        dh = ch;
+        dw = ch * ir;
+        dx = (cw - dw) / 2;
+        dy = 0;
+      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(im, dx, dy, dw, dh);
+    };
+    im.src = scanDataUrl;
+  }
+
+  /** Archive / detail: prefer frozen scan PNG; else re-render from photo; else seed cloud. */
+  function drawDeskCloudFromRecordOrSeed(canvas, rec, seedStr, seedDensity) {
+    if (!canvas) return;
+    if (rec && rec.scanImageDataUrl) {
+      drawSavedScanIntoCanvas(canvas, rec.scanImageDataUrl);
+    } else if (rec && rec.photoDataUrl) {
+      var cw = parseInt(canvas.getAttribute("width"), 10) || 60;
+      var ch = parseInt(canvas.getAttribute("height"), 10) || 52;
+      var n = Math.max(1400, Math.min(22000, Math.round(cw * ch * 7)));
+      drawSpatialScanFromImage(canvas, rec.photoDataUrl, {
+        focus: rec.focus != null ? rec.focus : 72,
+        mood: rec.mood || "Calm",
+        light: rec.light || "Soft",
+        pointCount: n,
+      });
+    } else {
+      drawPointCloudMetatool(canvas, seedStr, seedDensity);
+    }
+  }
+
+  function drawPortableCloudFromRecordOrSeed(canvas, rec, seedStr, seedDensity) {
+    if (!canvas) return;
+    if (rec && rec.scanImageDataUrl) {
+      drawSavedScanIntoCanvas(canvas, rec.scanImageDataUrl);
+    } else if (rec && rec.photoDataUrl) {
+      var cw = parseInt(canvas.getAttribute("width"), 10) || 56;
+      var ch = parseInt(canvas.getAttribute("height"), 10) || 56;
+      var n = Math.max(1200, Math.min(20000, Math.round(cw * ch * 6.5)));
+      drawSpatialScanFromImage(canvas, rec.photoDataUrl, {
+        focus: rec.focus != null ? rec.focus : 72,
+        mood: rec.mood || "Calm",
+        light: rec.light || "Soft",
+        pointCount: n,
+      });
+    } else {
+      drawPointCloudPortable(canvas, seedStr, seedDensity);
+    }
   }
 
   function renderHalftone(container, width, height) {
@@ -748,16 +1046,8 @@
     }
   }
 
-  function deleteSelectedDeskArchiveRecords() {
-    var ids = getSelectedDeskArchiveRecordIds();
-    if (!ids.length) return;
-    if (
-      !window.confirm(
-        "Delete " + ids.length + " record(s) from this device? This cannot be undone."
-      )
-    ) {
-      return;
-    }
+  function removeDeskArchiveRecordsByIds(ids) {
+    if (!ids || !ids.length) return;
     var skip = {};
     ids.forEach(function (id) {
       skip[id] = true;
@@ -781,6 +1071,19 @@
     buildMobileArchiveList();
   }
 
+  function deleteSelectedDeskArchiveRecords() {
+    var ids = getSelectedDeskArchiveRecordIds();
+    if (!ids.length) return;
+    if (
+      !window.confirm(
+        "Delete " + ids.length + " record(s) from this device? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    removeDeskArchiveRecordsByIds(ids);
+  }
+
   function buildDeskArchiveRows() {
     var host = document.getElementById("desk-archive-rows");
     if (!host) return;
@@ -798,14 +1101,22 @@
           r.photoDataUrl +
           '" alt="" /></div>'
         : '<div class="desk-thumb-cell"><svg viewBox="0 0 60 52" width="60" height="52"><use href="#desk-thumb" /></svg></div>';
+      var cloudCell =
+        r.scanImageDataUrl != null
+          ? '<div class="desk-thumb-cell desk-thumb-cell--scan"><img src="' +
+            r.scanImageDataUrl +
+            '" alt="" class="desk-archive-scan-img"/></div>'
+          : '<div class="desk-thumb-cell"><canvas width="60" height="52" data-record-id="' +
+            String(r.id).replace(/"/g, "") +
+            '" data-pc-m="desk-arch-' +
+            idx +
+            "-" +
+            r.id +
+            '" data-den="28"></canvas></div>';
       row.innerHTML =
         '<div class="desk-archive-check" data-archive-no-open="1"><input type="checkbox" data-archive-select="" aria-label="Select this record" /></div>' +
         photoCell +
-        '<div class="desk-thumb-cell"><canvas width="60" height="52" data-pc-m="desk-arch-' +
-        idx +
-        "-" +
-        r.id +
-        '" data-den="28"></canvas></div>' +
+        cloudCell +
         '<div><div class="desk-table-mini">' +
         r.displayId +
         '</div><div class="desk-table-mini"><small>' +
@@ -830,8 +1141,10 @@
       host.appendChild(row);
     });
     host.querySelectorAll("canvas[data-pc-m]").forEach(function (cv) {
+      var rid = cv.getAttribute("data-record-id");
+      var rec = rid ? findRecordByIdDesk(rid) : null;
       var den = parseInt(cv.getAttribute("data-den"), 10) || 28;
-      drawPointCloudMetatool(cv, cv.getAttribute("data-pc-m"), den);
+      drawDeskCloudFromRecordOrSeed(cv, rec, cv.getAttribute("data-pc-m"), den);
     });
 
     updateDeskArchiveMeta();
@@ -849,13 +1162,21 @@
       var card = document.createElement("div");
       card.className = "desk-result-card" + (row.best ? " is-best" : "");
       card.setAttribute("data-record-id", r.id);
+      var recallCloud =
+        r.scanImageDataUrl != null
+          ? '<div class="desk-thumb-cell desk-thumb-cell--scan" style="width:72px;height:60px"><img src="' +
+            r.scanImageDataUrl +
+            '" alt="" class="desk-archive-scan-img"/></div>'
+          : '<div class="desk-thumb-cell" style="width:72px;height:60px;background:var(--paper2)"><canvas width="72" height="60" data-record-id="' +
+            String(r.id).replace(/"/g, "") +
+            '" data-pc-m="desk-rec-' +
+            i +
+            "-" +
+            r.id +
+            '" data-den="32"></canvas></div>';
       card.innerHTML =
         '<div class="desk-thumb-cell" style="width:72px;height:60px"><svg viewBox="0 0 60 52" width="72" height="60"><use href="#desk-thumb" /></svg></div>' +
-        '<div class="desk-thumb-cell" style="width:72px;height:60px;background:var(--paper2)"><canvas width="72" height="60" data-pc-m="desk-rec-' +
-        i +
-        "-" +
-        r.id +
-        '" data-den="32"></canvas></div>' +
+        recallCloud +
         "<div>" +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
         '<span style="font-family:var(--mono);font-size:12px;font-weight:500">' +
@@ -882,8 +1203,10 @@
       host.appendChild(card);
     });
     host.querySelectorAll("canvas[data-pc-m]").forEach(function (cv) {
+      var rid = cv.getAttribute("data-record-id");
+      var rec = rid ? findRecordByIdDesk(rid) : null;
       var den = parseInt(cv.getAttribute("data-den"), 10) || 32;
-      drawPointCloudMetatool(cv, cv.getAttribute("data-pc-m"), den);
+      drawDeskCloudFromRecordOrSeed(cv, rec, cv.getAttribute("data-pc-m"), den);
     });
 
     host.onclick = function (e) {
@@ -921,13 +1244,21 @@
             r.photoDataUrl +
             '" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>'
           : '<div class="thumb-box"><svg viewBox="0 0 174 200" width="56" height="56"><use href="#desk-photo-svg" /></svg></div>';
+      var mobCloud =
+        r.scanImageDataUrl != null
+          ? '<div class="thumb-box thumb-box--scan"><img src="' +
+            r.scanImageDataUrl +
+            '" alt="" class="mobile-archive-scan-img"/></div>'
+          : '<div class="thumb-box"><canvas width="56" height="56" data-record-id="' +
+            String(r.id).replace(/"/g, "") +
+            '" data-pc-p="m-arch-' +
+            i +
+            "-" +
+            r.id +
+            '" data-den="40"></canvas></div>';
       card.innerHTML =
         thumbL +
-        '<div class="thumb-box"><canvas width="56" height="56" data-pc-p="m-arch-' +
-        i +
-        "-" +
-        r.id +
-        '" data-den="40"></canvas></div>' +
+        mobCloud +
         '<div class="archive-meta">' +
         '<div class="date">' +
         r.date +
@@ -947,8 +1278,10 @@
       });
     });
     host.querySelectorAll("canvas[data-pc-p]").forEach(function (cv) {
+      var rid = cv.getAttribute("data-record-id");
+      var rec = rid ? findRecordById(rid) : null;
       var den = parseInt(cv.getAttribute("data-den"), 10) || 40;
-      drawPointCloudPortable(cv, cv.getAttribute("data-pc-p"), den);
+      drawPortableCloudFromRecordOrSeed(cv, rec, cv.getAttribute("data-pc-p"), den);
     });
   }
 
@@ -967,14 +1300,22 @@
       var el = document.createElement("div");
       el.className = "recall-card";
       el.setAttribute("data-record-id", r.id);
+      var mobRecCloud =
+        r.scanImageDataUrl != null
+          ? '<div class="thumb-box thumb-box--scan" style="width:48px;height:48px"><img src="' +
+            r.scanImageDataUrl +
+            '" alt="" class="mobile-archive-scan-img"/></div>'
+          : '<div class="thumb-box" style="width:48px;height:48px"><canvas width="48" height="48" data-record-id="' +
+            String(r.id).replace(/"/g, "") +
+            '" data-pc-p="m-rec-' +
+            i +
+            "-" +
+            r.id +
+            '" data-den="30"></canvas></div>';
       el.innerHTML =
         '<div style="display:grid;grid-template-columns:48px 48px 1fr;gap:10px;align-items:start">' +
         '<div class="thumb-box" style="width:48px;height:48px"><svg viewBox="0 0 174 200" width="48" height="48"><use href="#desk-photo-svg" /></svg></div>' +
-        '<div class="thumb-box" style="width:48px;height:48px"><canvas width="48" height="48" data-pc-p="m-rec-' +
-        i +
-        "-" +
-        r.id +
-        '" data-den="30"></canvas></div>' +
+        mobRecCloud +
         "<div>" +
         '<div style="font-size:10px;font-weight:500;color:var(--ink);margin-bottom:2px">' +
         r.date +
@@ -1001,8 +1342,10 @@
       });
     });
     host.querySelectorAll("canvas[data-pc-p]").forEach(function (cv) {
+      var rid = cv.getAttribute("data-record-id");
+      var rec = rid ? findRecordById(rid) : null;
       var den = parseInt(cv.getAttribute("data-den"), 10) || 30;
-      drawPointCloudPortable(cv, cv.getAttribute("data-pc-p"), den);
+      drawPortableCloudFromRecordOrSeed(cv, rec, cv.getAttribute("data-pc-p"), den);
     });
   }
 
@@ -1035,10 +1378,31 @@
     if (sm) sm.textContent = rec.mood;
     if (sl) sl.textContent = rec.light;
     if (so) so.textContent = String(rec.objects != null ? rec.objects : "—");
-    var cv = document.getElementById("canvas-desk-detail-pc");
-    if (cv) drawPointCloudMetatool(cv, "desk-detail-" + rec.id, 72);
     ov.classList.add("is-open");
     ov.setAttribute("aria-hidden", "false");
+    var ridForDraw = rec.id;
+    var scanImgEl = document.getElementById("desk-detail-scan-img");
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var r2 = findRecordByIdDesk(ridForDraw);
+        var cv = document.getElementById("canvas-desk-detail-pc");
+        if (!r2) return;
+        if (r2.scanImageDataUrl && scanImgEl) {
+          scanImgEl.src = r2.scanImageDataUrl;
+          scanImgEl.classList.remove("hidden");
+          if (cv) cv.classList.add("hidden");
+        } else {
+          if (scanImgEl) {
+            scanImgEl.removeAttribute("src");
+            scanImgEl.classList.add("hidden");
+          }
+          if (cv) {
+            cv.classList.remove("hidden");
+            drawDeskCloudFromRecordOrSeed(cv, r2, "desk-detail-" + r2.id, 72);
+          }
+        }
+      });
+    });
   }
 
   function closeDeskDetail() {
@@ -1080,8 +1444,22 @@
     if (notes) notes.textContent = rec.notes || "";
     if (fl) fl.textContent = rec.focus + "%";
     if (bar) bar.style.width = rec.focus + "%";
+    var scanMob = document.getElementById("mobile-detail-scan-img");
     var dc = document.getElementById("canvas-mobile-detail-pc");
-    if (dc) drawPointCloudPortable(dc, "mobile-detail-" + rec.id, 85);
+    if (rec.scanImageDataUrl && scanMob) {
+      scanMob.src = rec.scanImageDataUrl;
+      scanMob.classList.remove("hidden");
+      if (dc) dc.classList.add("hidden");
+    } else {
+      if (scanMob) {
+        scanMob.removeAttribute("src");
+        scanMob.classList.add("hidden");
+      }
+      if (dc) {
+        dc.classList.remove("hidden");
+        drawPortableCloudFromRecordOrSeed(dc, rec, "mobile-detail-" + rec.id, 85);
+      }
+    }
   }
 
   function syncCaptureThumb() {
@@ -1349,6 +1727,7 @@
       objects: 4 + Math.floor(Math.random() * 3),
       notes: notesEl ? notesEl.value : "",
       photoDataUrl: null,
+      scanImageDataUrl: null,
       duration: "1h 20m",
       createdAt: now.getTime(),
     };
@@ -1358,9 +1737,10 @@
         btn.disabled = false;
       }
     }
-    function commitWithPhoto(photoUrl) {
+    function commitRecordMobile(photoUrl, scanUrl) {
       try {
         rec.photoDataUrl = photoUrl;
+        rec.scanImageDataUrl = scanUrl || null;
         var all = getAllRecords();
         all.unshift(rec);
         var ok = persistRecordListWithQuotaFallback(all, rec);
@@ -1383,10 +1763,35 @@
       }
     }
     var raw = state.uploadedImage;
-    if (raw && raw.length > 450000) {
-      compressImageDataUrl(raw, 1280, 0.78, commitWithPhoto);
+    var scanParamsMob = {
+      focus: state.focusLevel,
+      mood: state.selectedMood,
+      light: state.selectedLighting,
+    };
+    if (!raw) {
+      commitRecordMobile(null, null);
+      return;
+    }
+    var pend = 2;
+    var photoDone = null;
+    var scanDone = null;
+    function tryMobBoth() {
+      pend -= 1;
+      if (pend !== 0) return;
+      commitRecordMobile(photoDone, scanDone);
+    }
+    exportSpatialScanToDataUrl(raw, scanParamsMob, function (u) {
+      scanDone = u;
+      tryMobBoth();
+    });
+    if (raw.length > 450000) {
+      compressImageDataUrl(raw, 1280, 0.78, function (c) {
+        photoDone = c;
+        tryMobBoth();
+      });
     } else {
-      commitWithPhoto(raw || null);
+      photoDone = raw;
+      tryMobBoth();
     }
   }
 
@@ -1442,23 +1847,14 @@
     });
   }
 
-  function refreshDeskEntryProcessPanel() {
-    var img = document.getElementById("desk-process-source-thumb");
-    var emptyPh = document.getElementById("desk-process-source-empty");
+  function refreshDeskSpatialScanPanel() {
     var canvas = document.getElementById("canvas-desk-entry-process");
-    if (img) {
-      if (state.uploadedImage) {
-        img.src = state.uploadedImage;
-        img.classList.remove("hidden");
-        if (emptyPh) emptyPh.classList.add("hidden");
-      } else {
-        img.removeAttribute("src");
-        img.classList.add("hidden");
-        if (emptyPh) emptyPh.classList.remove("hidden");
-      }
-    }
     if (canvas && state.uploadedImage) {
-      drawPointCloudMetatoolFromImage(canvas, state.uploadedImage, 170);
+      drawSpatialScanFromImage(canvas, state.uploadedImage, {
+        focus: state.focusLevel,
+        mood: getDeskLogMood(),
+        light: getDeskLogLight(),
+      });
     }
   }
 
@@ -1492,16 +1888,23 @@
     var now = new Date();
     var idEl = document.getElementById("desk-log-record-id-display");
     var tEl = document.getElementById("desk-log-time-display");
-    var shortId =
-      "PAB-" +
-      now.getFullYear() +
-      "-" +
-      pad2(now.getMonth() + 1) +
-      pad2(now.getDate()) +
-      "-" +
-      String(Math.floor(Math.random() * 900) + 100);
-    if (idEl) idEl.textContent = "RECORD ID — " + shortId;
-    if (tEl) tEl.textContent = formatLogTime(now);
+    if (!state.deskDraftStarted) {
+      state.deskDraftStarted = true;
+      var shortId =
+        "PAB-" +
+        now.getFullYear() +
+        "-" +
+        pad2(now.getMonth() + 1) +
+        pad2(now.getDate()) +
+        "-" +
+        String(Math.floor(Math.random() * 900) + 100);
+      if (idEl) idEl.textContent = "RECORD ID — " + shortId;
+      if (tEl) tEl.textContent = formatLogTime(now);
+      var notes = document.getElementById("desk-log-notes");
+      if (notes) notes.value = "";
+    } else {
+      if (tEl) tEl.textContent = formatLogTime(now);
+    }
     var range = document.getElementById("desk-log-focus-range");
     if (range) {
       range.value = String(state.focusLevel);
@@ -1515,8 +1918,6 @@
     document.querySelectorAll("[data-desk-log-light]").forEach(function (b) {
       b.classList.toggle("is-on", b.textContent.trim() === state.selectedLighting);
     });
-    var notes = document.getElementById("desk-log-notes");
-    if (notes) notes.value = "";
   }
 
   function syncDeskSaveSummary() {
@@ -1556,8 +1957,13 @@
       var s = parseInt(el.getAttribute("data-desk-entry-step"), 10);
       el.classList.toggle("is-active", s === n);
     });
+    var deskNewPage = document.getElementById("desk-page-new-entry");
+    if (deskNewPage) {
+      deskNewPage.classList.toggle("desk-page-new-entry--spatial-wide", n === 5);
+    }
     updateDeskEntryStepper(n);
     if (n === 1) {
+      state.deskDraftStarted = false;
       if (state.uploadedImage) {
         showDeskViewfinderStill(state.uploadedImage);
         syncDeskRefCardFromState();
@@ -1575,12 +1981,25 @@
       syncDeskContinueStep1Button();
     }
     if (n === 2) {
-      refreshDeskEntryProcessPanel();
+      syncDeskLogFocusUi();
     }
     if (n === 3) {
-      prepareDeskLogUi();
+      var moodInp3 = document.getElementById("desk-log-mood-input");
+      if (moodInp3) moodInp3.value = state.selectedMood;
+      document.querySelectorAll("[data-desk-log-mood]").forEach(function (b) {
+        b.classList.toggle("is-on", b.textContent.trim() === state.selectedMood);
+      });
     }
     if (n === 4) {
+      document.querySelectorAll("[data-desk-log-light]").forEach(function (b) {
+        b.classList.toggle("is-on", b.textContent.trim() === state.selectedLighting);
+      });
+    }
+    if (n === 5) {
+      refreshDeskSpatialScanPanel();
+    }
+    if (n === 6) {
+      prepareDeskLogUi();
       syncDeskSaveSummary();
     }
   }
@@ -1608,6 +2027,7 @@
       objects: 4 + Math.floor(Math.random() * 3),
       notes: notesEl ? notesEl.value : "",
       photoDataUrl: null,
+      scanImageDataUrl: null,
       duration: "1h 20m",
       createdAt: now.getTime(),
     };
@@ -1617,9 +2037,10 @@
         btn.disabled = false;
       }
     }
-    function commitWithPhoto(photoUrl) {
+    function commitRecord(photoUrl, scanUrl) {
       try {
         rec.photoDataUrl = photoUrl;
+        rec.scanImageDataUrl = scanUrl || null;
         var all = getAllRecords();
         all.unshift(rec);
         var ok = persistRecordListWithQuotaFallback(all, rec);
@@ -1642,15 +2063,40 @@
       }
     }
     var raw = state.uploadedImage;
-    if (raw && raw.length > 450000) {
-      compressImageDataUrl(raw, 1280, 0.78, commitWithPhoto);
+    var scanParams = {
+      focus: state.focusLevel,
+      mood: getDeskLogMood(),
+      light: getDeskLogLight(),
+    };
+    if (!raw) {
+      commitRecord(null, null);
+      return;
+    }
+    var pending = 2;
+    var photoOut = null;
+    var scanOut = null;
+    function tryCommitBoth() {
+      pending -= 1;
+      if (pending !== 0) return;
+      commitRecord(photoOut, scanOut);
+    }
+    exportSpatialScanToDataUrl(raw, scanParams, function (url) {
+      scanOut = url;
+      tryCommitBoth();
+    });
+    if (raw.length > 450000) {
+      compressImageDataUrl(raw, 1280, 0.78, function (comp) {
+        photoOut = comp;
+        tryCommitBoth();
+      });
     } else {
-      commitWithPhoto(raw || null);
+      photoOut = raw;
+      tryCommitBoth();
     }
   }
 
   function bindDeskLogFormChips() {
-    var logPanel = document.getElementById("desk-entry-panel-log");
+    var logPanel = document.getElementById("desk-page-new-entry");
     if (!logPanel) return;
     logPanel.addEventListener("click", function (e) {
       var m = e.target.closest("[data-desk-log-mood]");
@@ -1844,10 +2290,34 @@
         setDeskEntryStep(2);
       });
     }
+    var deskCont4 = document.getElementById("desk-btn-continue-step4");
+    if (deskCont4) {
+      deskCont4.addEventListener("click", function () {
+        setDeskEntryStep(5);
+      });
+    }
     var deskBack4 = document.getElementById("desk-btn-back-step4");
     if (deskBack4) {
       deskBack4.addEventListener("click", function () {
         setDeskEntryStep(3);
+      });
+    }
+    var deskCont5 = document.getElementById("desk-btn-continue-step5");
+    if (deskCont5) {
+      deskCont5.addEventListener("click", function () {
+        setDeskEntryStep(6);
+      });
+    }
+    var deskBack5 = document.getElementById("desk-btn-back-step5");
+    if (deskBack5) {
+      deskBack5.addEventListener("click", function () {
+        setDeskEntryStep(4);
+      });
+    }
+    var deskBack6 = document.getElementById("desk-btn-back-step6");
+    if (deskBack6) {
+      deskBack6.addEventListener("click", function () {
+        setDeskEntryStep(5);
       });
     }
     var deskSaveEntry = document.getElementById("desk-btn-save-entry");

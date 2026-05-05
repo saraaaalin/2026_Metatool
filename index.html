@@ -115,17 +115,27 @@
           <div class="desk-step-line is-done"></div>
           <div class="desk-step-item">
             <div class="desk-step-num">2</div>
-            <span class="desk-step-label">02 Spatial Process</span>
+            <span class="desk-step-label">02 Focus</span>
           </div>
           <div class="desk-step-line"></div>
           <div class="desk-step-item">
             <div class="desk-step-num">3</div>
-            <span class="desk-step-label">03 Attention Log</span>
+            <span class="desk-step-label">03 Mood</span>
           </div>
           <div class="desk-step-line"></div>
           <div class="desk-step-item">
             <div class="desk-step-num">4</div>
-            <span class="desk-step-label">04 Save</span>
+            <span class="desk-step-label">04 Light</span>
+          </div>
+          <div class="desk-step-line"></div>
+          <div class="desk-step-item">
+            <div class="desk-step-num">5</div>
+            <span class="desk-step-label">05 Spatial scan</span>
+          </div>
+          <div class="desk-step-line"></div>
+          <div class="desk-step-item">
+            <div class="desk-step-num">6</div>
+            <span class="desk-step-label">06 Save</span>
           </div>
         </div>
         <div class="desk-new__grid">
@@ -183,41 +193,14 @@
                 </div>
               </div>
               <button type="button" class="desk-take-photo" id="desk-btn-take-photo"><span>Take Desk Photo</span><span style="font-size:16px;opacity:.5">◉</span></button>
-              <button type="button" class="desk-entry-continue desk-take-photo" id="desk-btn-continue-step1" disabled><span>Continue to Spatial Processing</span><span style="opacity:.5">→</span></button>
+              <button type="button" class="desk-entry-continue desk-take-photo" id="desk-btn-continue-step1" disabled><span>Continue to focus</span><span style="opacity:.5">→</span></button>
             </div>
 
-            <!-- Step 2: Spatial process -->
+            <!-- Step 2: Focus -->
             <div class="desk-entry-panel" data-desk-entry-step="2">
               <div>
-                <div class="desk-caption">Step 02 — Spatial Process</div>
-                <p class="desk-p-sans">Your photo is translated into a point cloud — a spatial record of object positions on your desk.</p>
-              </div>
-              <div class="desk-spatial-stack" aria-label="Spatial record and source photo">
-                <div class="desk-spatial-stack__cloud">
-                  <span class="desk-spatial-stack__label">Spatial record</span>
-                  <div class="desk-spatial-stack__canvas-wrap">
-                    <canvas id="canvas-desk-entry-process" width="400" height="280" aria-label="Point cloud preview"></canvas>
-                  </div>
-                </div>
-                <div class="desk-spatial-stack__source">
-                  <span class="desk-spatial-stack__label">Source capture — reference</span>
-                  <div class="desk-spatial-stack__source-inner">
-                    <img id="desk-process-source-thumb" class="desk-spatial-stack__img hidden" alt="Uploaded desk photo" />
-                    <p id="desk-process-source-empty" class="desk-spatial-stack__empty">No photo loaded — go back to Step 01 to capture or upload.</p>
-                  </div>
-                </div>
-              </div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-                <button type="button" class="desk-cell-btn" id="desk-btn-back-step2">← Back</button>
-                <button type="button" class="desk-take-photo" id="desk-btn-continue-step2" style="flex:1;min-width:200px"><span>Continue to Attention Log</span><span style="opacity:.5">→</span></button>
-              </div>
-            </div>
-
-            <!-- Step 3: Attention log -->
-            <div class="desk-entry-panel" data-desk-entry-step="3" id="desk-entry-panel-log">
-              <div>
-                <div class="desk-caption">Step 03 — Attention Log</div>
-                <p class="desk-p-sans">Rate this session’s focus, mood, and lighting. Add optional field notes.</p>
+                <div class="desk-caption">Step 02 — Focus</div>
+                <p class="desk-p-sans">How concentrated did this session feel? Higher focus tightens the spatial scan; lower focus adds scatter.</p>
               </div>
               <div class="desk-recall__panel">
                 <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
@@ -233,6 +216,18 @@
                   <span>0 — Scattered</span><span>50</span><span>100 — Deep</span>
                 </div>
               </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="desk-cell-btn" id="desk-btn-back-step2">← Back</button>
+                <button type="button" class="desk-take-photo" id="desk-btn-continue-step2" style="flex:1;min-width:200px"><span>Continue to mood</span><span style="opacity:.5">→</span></button>
+              </div>
+            </div>
+
+            <!-- Step 3: Mood -->
+            <div class="desk-entry-panel" data-desk-entry-step="3">
+              <div>
+                <div class="desk-caption">Step 03 — Mood</div>
+                <p class="desk-p-sans">How did this desk session feel emotionally? This nudges the atmosphere of the scan slightly.</p>
+              </div>
               <div>
                 <div class="desk-caption" style="margin-bottom:8px">Current Mood</div>
                 <input type="text" id="desk-log-mood-input" class="desk-log-text-input" placeholder="e.g. calm, restless…" />
@@ -245,6 +240,18 @@
                   <button type="button" data-desk-log-mood>Tired</button>
                 </div>
               </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="desk-cell-btn" id="desk-btn-back-step3">← Back</button>
+                <button type="button" class="desk-take-photo" id="desk-btn-continue-step3" style="flex:1;min-width:200px"><span>Continue to lighting</span><span style="opacity:.5">→</span></button>
+              </div>
+            </div>
+
+            <!-- Step 4: Lighting -->
+            <div class="desk-entry-panel" data-desk-entry-step="4">
+              <div>
+                <div class="desk-caption">Step 04 — Lighting</div>
+                <p class="desk-p-sans">Describe the light in the room. This adjusts contrast and intensity in the point cloud.</p>
+              </div>
               <div>
                 <div class="desk-caption" style="margin-bottom:8px">Lighting Condition</div>
                 <div class="desk-chip-row" data-desk-chip-group="log-light">
@@ -255,24 +262,49 @@
                   <button type="button" data-desk-log-light>Artificial</button>
                 </div>
               </div>
-              <div>
-                <div class="desk-caption" style="margin-bottom:8px">Field Notes</div>
-                <textarea id="desk-log-notes" class="desk-log-notes" rows="4" placeholder="Observations about this session…"></textarea>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:9px;color:var(--gray3)">
-                <span id="desk-log-record-id-display">RECORD ID — …</span>
-                <span id="desk-log-time-display">—</span>
-              </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-                <button type="button" class="desk-cell-btn" id="desk-btn-back-step3">← Back</button>
-                <button type="button" class="desk-take-photo" id="desk-btn-continue-step3" style="flex:1;min-width:200px"><span>Continue to Save</span><span style="opacity:.5">→</span></button>
+                <button type="button" class="desk-cell-btn" id="desk-btn-back-step4">← Back</button>
+                <button type="button" class="desk-take-photo" id="desk-btn-continue-step4" style="flex:1;min-width:200px"><span>Generate spatial scan</span><span style="opacity:.5">→</span></button>
               </div>
             </div>
 
-            <!-- Step 4: Save -->
-            <div class="desk-entry-panel" data-desk-entry-step="4">
+            <!-- Step 5: Spatial scan (text left, visualization right when wide layout is active) -->
+            <div class="desk-entry-panel" data-desk-entry-step="5">
+              <div class="desk-spatial-step">
+                <div class="desk-spatial-step__text">
+                  <div class="desk-caption">Step 05 — Spatial scan</div>
+                  <p class="desk-p-sans">Density-driven scan from your desk image, modulated by focus, mood, and lighting. Review before saving.</p>
+                  <div class="desk-next-h">Spatial scan</div>
+                  <p class="desk-p-sans">This is a computational density field — not a literal 3D model — built from edges and clutter in your photo.</p>
+                  <div class="desk-guidance desk-guidance--spatial-step">
+                    <h4>Tip</h4>
+                    <div class="desk-guidance-grid desk-guidance-grid--two">
+                      <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Go back a step if you want to change inputs</span></div>
+                      <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Go back to lighting or mood if you want to regenerate the scan</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="desk-spatial-step__viz">
+                  <div class="desk-spatial-stack desk-spatial-stack--wide desk-spatial-stack--scan-only" aria-label="Spatial scan">
+                    <div class="desk-spatial-stack__cloud desk-spatial-stack__cloud--scan">
+                      <span class="desk-spatial-stack__label">Spatial scan</span>
+                      <div class="desk-spatial-stack__canvas-wrap">
+                        <canvas id="canvas-desk-entry-process" width="720" height="500" aria-label="Spatial point cloud"></canvas>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="desk-spatial-step__actions">
+                <button type="button" class="desk-cell-btn" id="desk-btn-back-step5">← Back</button>
+                <button type="button" class="desk-take-photo" id="desk-btn-continue-step5" style="flex:1;min-width:200px"><span>Continue to save</span><span style="opacity:.5">→</span></button>
+              </div>
+            </div>
+
+            <!-- Step 6: Save -->
+            <div class="desk-entry-panel" data-desk-entry-step="6">
               <div>
-                <div class="desk-caption">Step 04 — Save</div>
+                <div class="desk-caption">Step 06 — Save</div>
                 <p class="desk-p-sans">Review and save this record to your local archive.</p>
               </div>
               <div class="desk-ref-card" style="max-width:100%">
@@ -285,8 +317,16 @@
                   <div id="desk-save-summary">Focus — · Mood — · Light —</div>
                 </div>
               </div>
+              <div>
+                <div class="desk-caption" style="margin-bottom:8px">Field Notes</div>
+                <textarea id="desk-log-notes" class="desk-log-notes" rows="4" placeholder="Observations about this session…"></textarea>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:9px;color:var(--gray3)">
+                <span id="desk-log-record-id-display">RECORD ID — …</span>
+                <span id="desk-log-time-display">—</span>
+              </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-                <button type="button" class="desk-cell-btn" id="desk-btn-back-step4">← Back</button>
+                <button type="button" class="desk-cell-btn" id="desk-btn-back-step6">← Back</button>
                 <button type="button" class="desk-take-photo" id="desk-btn-save-entry" style="flex:1;min-width:200px"><span>Save Record</span><span style="opacity:.5">→</span></button>
               </div>
             </div>
@@ -299,22 +339,29 @@
                 <div class="desk-next-row">
                   <span class="desk-next-num">02</span>
                   <div>
-                    <div class="desk-next-title">Spatial Processing</div>
-                    <p class="desk-p-sans">Your photo is translated into a point cloud — a spatial record of object positions on your desk.</p>
+                    <div class="desk-next-title">Focus</div>
+                    <p class="desk-p-sans">Set how concentrated this session felt — it shapes how tight the spatial scan appears.</p>
                   </div>
                 </div>
                 <div class="desk-next-row">
-                  <span class="desk-next-num">03</span>
+                  <span class="desk-next-num">03–04</span>
                   <div>
-                    <div class="desk-next-title">Attention Log</div>
-                    <p class="desk-p-sans">You rate your focus level, mood, and lighting. Add field notes about this session.</p>
+                    <div class="desk-next-title">Mood &amp; light</div>
+                    <p class="desk-p-sans">These tune intensity and subtle scatter in the scan before it is generated.</p>
                   </div>
                 </div>
                 <div class="desk-next-row">
-                  <span class="desk-next-num">04</span>
+                  <span class="desk-next-num">05</span>
                   <div>
-                    <div class="desk-next-title">Save to Archive</div>
-                    <p class="desk-p-sans">The record is saved locally. Retrieve matching configurations anytime with Recall Mode.</p>
+                    <div class="desk-next-title">Spatial scan</div>
+                    <p class="desk-p-sans">A high-resolution density map from your desk photo — generated only after the inputs above.</p>
+                  </div>
+                </div>
+                <div class="desk-next-row">
+                  <span class="desk-next-num">06</span>
+                  <div>
+                    <div class="desk-next-title">Save</div>
+                    <p class="desk-p-sans">Store locally for Archive and Recall Mode.</p>
                   </div>
                 </div>
               </div>
@@ -329,28 +376,50 @@
               </div>
             </div>
             <div class="desk-entry-sidebar-panel" data-desk-entry-step="2">
-              <div class="desk-next-h">Spatial processing</div>
-              <p class="desk-p-sans">The point cloud approximates object density from your still. It is used as a visual fingerprint for this session alongside your attention log.</p>
+              <div class="desk-next-h">Focus</div>
+              <p class="desk-p-sans">Higher focus yields a cleaner, more clustered scan. Lower focus reads as more diffuse and fragmented.</p>
               <div class="desk-guidance" style="margin-top:8px">
                 <h4>Tip</h4>
                 <div class="desk-guidance-grid">
-                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Clear desk photos produce cleaner maps</span></div>
-                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Keep the same camera height each time</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Use the ends of the scale honestly</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>You can adjust before generating the scan</span></div>
                 </div>
               </div>
             </div>
             <div class="desk-entry-sidebar-panel" data-desk-entry-step="3">
-              <div class="desk-next-h">Attention log</div>
-              <p class="desk-p-sans">Be honest about focus and environment — Recall Mode will match against these values later.</p>
+              <div class="desk-next-h">Mood</div>
+              <p class="desk-p-sans">Mood nudges jitter and opacity slightly — the scan stays a light grid chart for a consistent read.</p>
               <div class="desk-guidance" style="margin-top:8px">
                 <h4>Tip</h4>
                 <div class="desk-guidance-grid">
-                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Mood chips sync with the text field</span></div>
-                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Notes are optional but help future you</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Chips sync with the text field</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Recall Mode uses mood for matching</span></div>
                 </div>
               </div>
             </div>
             <div class="desk-entry-sidebar-panel" data-desk-entry-step="4">
+              <div class="desk-next-h">Lighting</div>
+              <p class="desk-p-sans">Bright scenes lift dot intensity; dim scenes pull it back while keeping structure from the image.</p>
+              <div class="desk-guidance" style="margin-top:8px">
+                <h4>Tip</h4>
+                <div class="desk-guidance-grid">
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Match what you actually saw on the desk</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Recall uses lighting in retrieval</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desk-entry-sidebar-panel" data-desk-entry-step="5">
+              <div class="desk-next-h">Spatial scan</div>
+              <p class="desk-p-sans">This is a computational density field — not a literal 3D model — built from edges and clutter in your photo.</p>
+              <div class="desk-guidance" style="margin-top:8px">
+                <h4>Tip</h4>
+                <div class="desk-guidance-grid">
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Go back a step if you want to change inputs</span></div>
+                  <div class="desk-guidance-item"><span class="desk-guidance-dot"></span><span>Adjust earlier steps if you want a different scan before saving</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desk-entry-sidebar-panel" data-desk-entry-step="6">
               <div class="desk-next-h">Save locally</div>
               <p class="desk-p-sans">Records live in your browser (localStorage). They appear in Archive and can be matched in Recall Mode.</p>
               <div class="desk-guidance" style="margin-top:8px">
@@ -393,12 +462,25 @@
           <button type="button" class="desk-sort">↕ SORT</button>
         </div>
         <div class="desk-archive-toolbar">
-          <span id="desk-archive-selection-hint" class="desk-archive-toolbar__hint" aria-live="polite"></span>
-          <button type="button" class="desk-cell-btn desk-archive-toolbar__delete" id="desk-archive-delete-selected" disabled>Delete selected</button>
+          <p class="desk-archive-toolbar__help">
+            <strong>Delete from this device:</strong> tick the boxes in the first column (or use the header checkbox to select all), then click the
+            <strong>trash</strong> icon to remove those records.
+          </p>
+          <div class="desk-archive-toolbar__actions">
+            <span id="desk-archive-selection-hint" class="desk-archive-toolbar__hint" aria-live="polite"></span>
+            <button type="button" class="desk-archive-trash-btn" id="desk-archive-delete-selected" disabled aria-label="Delete selected records" title="Delete selected records">
+              <svg class="desk-archive-trash-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 7h16" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+                <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="desk-table-head">
           <div class="desk-th-select"><input type="checkbox" id="desk-archive-select-all" aria-label="Select all records in the list" title="Select all" /></div>
-          <div>Photo</div><div>Cloud</div><div>Record ID</div><div>Date</div><div>Focus</div><div>Mood</div><div>Light</div><div></div>
+          <div>Photo</div><div>Cloud</div><div>Record ID</div><div>Date</div><div>Focus</div><div>Mood</div><div>Light</div><div>View</div>
         </div>
         <div class="desk-table-body" id="desk-archive-rows"></div>
       </section>
@@ -473,8 +555,11 @@
             <img id="desk-detail-photo" alt="" class="hidden desk-detail-photo-img" />
             <svg id="desk-detail-photo-fallback" class="desk-detail-photo-fallback" viewBox="0 0 174 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#desk-photo-svg" /></svg>
           </div>
-          <div>
-            <canvas id="canvas-desk-detail-pc" width="240" height="160" class="desk-detail-canvas"></canvas>
+          <div class="desk-detail-scan-col">
+            <div class="desk-detail-scan-frame">
+              <img id="desk-detail-scan-img" class="desk-detail-scan-img hidden" alt="Spatial scan" />
+              <canvas id="canvas-desk-detail-pc" width="720" height="500" class="desk-detail-canvas desk-detail-canvas--legacy hidden" aria-hidden="true"></canvas>
+            </div>
             <div class="desk-detail-stats">
               <div><span class="desk-detail-stat-lbl">Focus</span><span id="desk-detail-stat-focus">88%</span></div>
               <div><span class="desk-detail-stat-lbl">Mood</span><span id="desk-detail-stat-mood">Focused</span></div>
@@ -926,10 +1011,11 @@
                 <span style="font-size:7px;letter-spacing:0.1em;color:var(--gray3)">PHOTOGRAPH</span>
               </div>
             </div>
-            <div style="background:var(--paper2);position:relative">
-              <canvas id="canvas-mobile-detail-pc" width="174" height="170"></canvas>
-              <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 6px;background:rgba(239,239,237,0.85);border-top:1px solid var(--gray1)">
-                <span style="font-size:7px;letter-spacing:0.1em;color:var(--gray3)">POINT CLOUD</span>
+            <div style="background:#f2f1ee;position:relative;display:flex;align-items:center;justify-content:center;min-height:170px">
+              <img id="mobile-detail-scan-img" alt="" class="mobile-detail-scan-img hidden" />
+              <canvas id="canvas-mobile-detail-pc" width="174" height="170" class="hidden"></canvas>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 6px;background:rgba(12,12,12,0.55);border-top:1px solid var(--gray1)">
+                <span style="font-size:7px;letter-spacing:0.1em;color:rgba(248,247,245,0.75)">SPATIAL SCAN</span>
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@
  * Caches core assets for offline support and installability.
  */
 
-const CACHE_NAME = "portable-attention-box-v14";
+const CACHE_NAME = "portable-attention-box-v24";
 const CORE_ASSETS = [
   "./",
   "./index.html",
